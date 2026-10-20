@@ -1,0 +1,71 @@
+const express = require("express");
+const cors = require("cors");
+const routes = require("./routes");
+const { connectMongo } = require("./config");
+
+const PORT = process.env.PORT || 5001;
+const app = express();
+
+app.use(cors());
+app.use(express.json({ limit: "50kb" }));
+
+// app.use(
+//   "/api/auth/register-admin",
+//   rateLimit({
+//     windowMs: 15 * 60 * 1000,
+//     limit: 5,
+//     standardHeaders: "draft-7",
+//     legacyHeaders: false,
+//   }),
+// );
+
+// Root endpoint
+app.get("/", async (req, res) => {
+  try {
+    res.json({
+      message: "Welcome to the SanasInvite backend API",
+      version: process.env.npm_package_version,
+    });
+  } catch (error) {
+    console.error("Failed to retrieve deployment data:", error);
+    res.status(500).json({
+      success: false,
+      resultCode: -1,
+      message: "Internal server error",
+    });
+  }
+});
+
+app.get("/health", (req, res) => res.json({ ok: true }));
+app.use("/api", routes);
+
+// 404 handler
+app.all("*", (req, res) => {
+  res.status(404).json({
+    success: false,
+    resultCode: -1021,
+    message: "API end point is not available.",
+  });
+});
+
+module.exports = app;
+
+// Start server only after MongoDB is connected (avoids "bufferCommands = false" errors on first request)
+async function startServer() {
+  try {
+    await connectMongo();
+    app.listen(PORT, () => {
+      console.log(`Server listening on port ${PORT}`);
+    });
+  } catch (err) {
+    console.error("Failed to connect to MongoDB:", err);
+    console.error("Please check:");
+    console.error("1. MongoDB server is running and accessible");
+    console.error("2. _DB_URL environment variable is set correctly");
+    console.error("3. Network connectivity to MongoDB server");
+    console.error("4. Firewall rules allow connection to MongoDB port");
+    process.exit(1);
+  }
+}
+
+startServer();
