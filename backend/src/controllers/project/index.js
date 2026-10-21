@@ -6,6 +6,8 @@ const {
   getAllProjects,
   removeMember,
   updateMemberAccess,
+  getParticularProject,
+  getProjects,
 } = require("../../handler/project");
 
 //hooks
@@ -16,6 +18,7 @@ const {
   ProjectEditSchema,
   RemoveMemberSchema,
   UpdateMemberAccessSchema,
+  GetParticularProjectSchema,
 } = require("../../utils/validation/project");
 
 const yup = require("yup");
@@ -122,5 +125,30 @@ exports.UpdateMemberAccess = async function (req, res) {
       }, {});
       return res.status(400).json({ message: errorMessages });
     }
+  }
+};
+
+exports.GetParticularProject = async function (req, res) {
+  try {
+    await GetParticularProjectSchema.validate(req.body, { abortEarly: false });
+    const response = await getParticularProject(req);
+    return res.status(response.responseCode).send(response);
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      const errorMessages = err.inner.reduce((acc, currentError) => {
+        acc[currentError.path] = currentError.message;
+        return acc;
+      }, {});
+      return res.status(400).json({ message: errorMessages });
+    }
+  }
+};
+
+exports.GetProjects = async function (req, res) {
+  try {
+    const response = await getProjects(req);
+    return res.status(response.responseCode).send(response);
+  } catch (err) {
+    return res.status(400).json({ message: err });
   }
 };

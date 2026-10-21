@@ -1,10 +1,10 @@
-const { Commands, Task, User } = require("../../models");
+const { Commands, Task, User, Notification } = require("../../models");
 
 exports.createCommand = async (req, res) => {
   try {
     const { task_id, command, created_by } = req.body;
     const [task, user] = await Promise.all([
-      Task.findById(task_id),
+      Task.findById(task_id).populate("project_id", "name"),
       User.findById(created_by),
     ]);
     if (!task) {
@@ -22,6 +22,19 @@ exports.createCommand = async (req, res) => {
       };
     }
     await Commands.create({ task_id, command, created_by });
+
+    await Promise.all(
+      task.assigned_to.map(async (user_id) => {
+        await Notification.create({
+          project: task.project_id.name,
+          name: `New Comment`,
+          description: `New comment added to task ${task.name}`,
+          user_id: user_id,
+          message: `New comment added to task ${task.name} by ${user.name}`,
+        });
+      }),
+    );
+
     return {
       status: true,
       responseCode: 201,

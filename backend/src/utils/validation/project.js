@@ -4,15 +4,17 @@ exports.ProjectCreateSchema = yup
   .object({
     name: yup.string().trim().required("Project name is required."),
     description: yup.string().trim(),
-    board_status: yup
+    status: yup
+      .string()
+      .oneOf(["active", "inactive", "hold", "completed"])
+      .required("Project status is required."),
+    progress: yup.number().min(0).max(100).required("Progress is required."),
+    due_date: yup.string().trim().required("Due date is required."),
+    users: yup
       .array()
-      .of(
-        yup.object({
-          status_type: yup.string().trim().required("Status type is required."),
-          color: yup.string().trim().required("Color is required."),
-        }),
-      )
-      .required("Board status is required."),
+      .of(yup.string().trim().required("User ID is required."))
+      .min(1, "Select at least one user.")
+      .required("Users are required."),
   })
   .noUnknown(true, "Unknown field is not allowed.");
 
@@ -21,6 +23,17 @@ exports.ProjectEditSchema = yup
     project_id: yup.string().trim().required("Project ID is required."),
     name: yup.string().trim().required("Project name is required."),
     description: yup.string().trim(),
+    status: yup
+      .string()
+      .oneOf(["active", "inactive", "hold", "completed"])
+      .required("Project status is required."),
+    progress: yup.number().min(0).max(100).required("Progress is required."),
+    due_date: yup.string().trim().required("Due date is required."),
+    users: yup
+      .array()
+      .of(yup.string().trim().required("User ID is required."))
+      .min(1, "Select at least one user.")
+      .required("Users are required."),
   })
   .noUnknown(true, "Unknown field is not allowed.");
 
@@ -68,5 +81,11 @@ exports.UpdateMemberAccessSchema = yup
     delete: yup.boolean(),
     edit: yup.boolean(),
     all: yup.boolean(),
+  })
+  .noUnknown(true, "Unknown field is not allowed.");
+
+exports.GetParticularProjectSchema = yup
+  .object({
+    project_id: yup.string().trim().required("Project ID is required."),
   })
   .noUnknown(true, "Unknown field is not allowed.");

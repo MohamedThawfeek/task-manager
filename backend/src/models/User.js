@@ -16,6 +16,10 @@ const schema = new mongoose.Schema(
     role: { type: String, default: null },
     access: { type: String, enum: ["Admin", "User"], default: "User" },
     status: { type: String, enum: ["Active", "Inactive"], default: "Active" },
+    first: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true },
 );

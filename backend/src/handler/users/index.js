@@ -1,5 +1,5 @@
 const { User } = require("../../models");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const emailQueue = require("../../utils/queue");
 const { fileToBase64 } = require("../../utils/image");
@@ -168,8 +168,8 @@ exports.updateUserProfile = async (req, res) => {
 };
 
 exports.updatePassword = async (req, res) => {
+  const { id } = req;
   try {
-    const { id } = req.params;
     const { password } = req.body;
     const user = await User.findById(id);
     if (!user) {
@@ -205,22 +205,16 @@ exports.updatePassword = async (req, res) => {
 };
 
 exports.getUserProfile = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req;
   try {
-    const user = await User.findById(id);
+    const user = await User.findById(id).select(
+      "-__v -password -createdAt -updatedAt",
+    );
     if (!user) {
       return {
         status: false,
         responseCode: 404,
         message: "User not found",
-      };
-    }
-
-    if (user && user.password === null) {
-      return {
-        status: false,
-        responseCode: 404,
-        message: "Please register your account",
       };
     }
 
@@ -362,6 +356,95 @@ exports.deleteUser = async (req, res) => {
       status: false,
       responseCode: 500,
       message: "Failed to delete user",
+      db_error: error,
+    };
+  }
+};
+
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select(
+      "-__v -password -createdAt -updatedAt",
+    );
+    return {
+      status: true,
+      responseCode: 200,
+      message: "Users fetched successfully",
+      users,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      responseCode: 500,
+      message: "Failed to fetch users",
+      db_error: error,
+    };
+  }
+};
+
+exports.adminDeleteUser = async (req, res) => {
+  const { id } = req.body;
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      return {
+        status: false,
+        responseCode: 404,
+        message: "User not found",
+      };
+    }
+
+    await User.findByIdAndDelete(id);
+    return {
+      status: true,
+      responseCode: 200,
+      message: "User deleted successfully",
+    };
+  } catch (error) {
+    return {
+      status: false,
+      responseCode: 500,
+      message: "Failed to delete user",
+      db_error: error,
+    };
+  }
+};
+
+exports.adminUpdateUser = async (req, res) => {
+  try {
+    const { id, name, email, password, phone, role, access, status } = req.body;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return {
+        status: false,
+        responseCode: 404,
+        message: "User not found",
+      };
+    }
+
+    const payload = {
+      name,
+      email,
+      ...(password && { password: await bcrypt.hash(password, 10) }),
+      ...(phone && { phone }),
+      ...(role && { role }),
+      ...(access && { access }),
+      ...(status && { status }),
+    };
+
+    await User.findByIdAndUpdate(id, payload, { runValidators: true });
+
+    return {
+      status: true,
+      responseCode: 200,
+      message: "User updated successfully",
+    };
+  } catch (error) {
+    return {
+      status: false,
+      responseCode: 500,
+      message: "Failed to update user",
       db_error: error,
     };
   }

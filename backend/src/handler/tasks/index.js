@@ -1,5 +1,26 @@
-const { Project, Status, Task, User, Commands } = require("../../models");
+const {
+  Project,
+  Status,
+  Task,
+  User,
+  Commands,
+  Notification,
+} = require("../../models");
 const dayjs = require("dayjs");
+const { fileToBase64 } = require("../../utils/image");
+
+const uploadedFilesToBase64 = async (files) => {
+  if (!files) return [];
+  const list = Array.isArray(files) ? files : [files];
+  return Promise.all(list.map((file) => fileToBase64(file)));
+};
+
+const normalizeTodos = (todos, userId) =>
+  (todos || []).map((todo) => ({
+    title: typeof todo === "string" ? todo : todo.title,
+    completed: typeof todo === "object" ? Boolean(todo.completed) : false,
+    created_by: typeof todo === "object" ? todo.created_by || userId : userId,
+  }));
 
 exports.createTask = async (req, res) => {
   const { id } = req;
@@ -13,10 +34,16 @@ exports.createTask = async (req, res) => {
     due_date,
     assigned_to = [],
     todos = [],
-    attachments = [],
   } = req.body;
 
   try {
+    // Get multiple attachments
+    const files = req.files?.attachments;
+    const uploadedAttachments = await uploadedFilesToBase64(files);
+    const attachments = [
+      ...(Array.isArray(req.body.attachments) ? req.body.attachments : []),
+      ...uploadedAttachments,
+    ];
     // 2. Find project
     const findProject = await Project.findById(project_id);
 
@@ -50,15 +77,23 @@ exports.createTask = async (req, res) => {
       priority,
       due_date,
       assigned_to,
-      todos: todos.map((todo) => ({
-        title: todo,
-        completed: false,
-      })),
+      todos: normalizeTodos(todos, id),
       attachments,
       status_id,
       created_by: id,
       updated_by: id,
     });
+
+    await Promise.all(
+      assigned_to.map(async (user_id) => {
+        await Notification.create({
+          project: findProject.name,
+          name: `${title}`,
+          description: `${description}`,
+          user_id: user_id,
+        });
+      }),
+    );
 
     return {
       status: true,
@@ -83,7 +118,6 @@ exports.editTask = async (req, res) => {
     task_id,
     assigned_to = [],
     todos = [],
-    attachments = [],
     title,
     description,
     priority,
@@ -93,6 +127,23 @@ exports.editTask = async (req, res) => {
   } = req.body;
 
   try {
+    // Get multiple attachments
+    const files = req.files?.attachments;
+    const uploadedAttachments = await uploadedFilesToBase64(files);
+    const retainedAttachments = Array.isArray(req.body.attachments)
+      ? req.body.attachments
+      : [];
+
+    const findProject = await Project.findById(project_id);
+
+    if (!findProject) {
+      return {
+        status: false,
+        responseCode: 404,
+        message: "Project not found",
+      };
+    }
+
     // 1. Find task
     const findTask = await Task.findById(task_id);
 
@@ -112,18 +163,20 @@ exports.editTask = async (req, res) => {
       description,
       priority,
       due_date,
-      attachments,
       status_id,
       project_id,
     };
 
+    if (req.body.attachments !== undefined || uploadedAttachments.length) {
+      updatePayload.attachments = [
+        ...retainedAttachments,
+        ...uploadedAttachments,
+      ];
+    }
+
     // 16. Update todos only if provided
     if (todos !== undefined) {
-      updatePayload.todos = todos.map((todo) => ({
-        title: todo,
-        completed: false,
-        created_by: id,
-      }));
+      updatePayload.todos = normalizeTodos(todos, id);
     }
 
     // 17. Update task
@@ -131,6 +184,22 @@ exports.editTask = async (req, res) => {
       task_id,
       { $set: updatePayload },
       { new: true, runValidators: true },
+    );
+
+    const newAssignedUsers = assigned_to.filter(
+      (user_id) => !findTask.assigned_to.includes(user_id),
+    );
+
+    console.log(newAssignedUsers);
+    await Promise.all(
+      newAssignedUsers.map(async (user_id) => {
+        await Notification.create({
+          project: findProject.name,
+          name: `${title}`,
+          description: `${description}`,
+          user_id: user_id,
+        });
+      }),
     );
 
     return {
@@ -209,15 +278,6 @@ exports.updateTodoStatus = async (req, res) => {
   const { task_id, todo_id, completed } = req.body;
 
   try {
-    // 1. Validate completed value
-    if (typeof completed !== "boolean") {
-      return {
-        status: false,
-        responseCode: 400,
-        message: "Completed must be true or false",
-      };
-    }
-
     // 2. Update specific todo
     const task = await Task.findOneAndUpdate(
       {
@@ -271,7 +331,7 @@ exports.updateTodoStatus = async (req, res) => {
       totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     // 7. Update project progress
-    await Project.findByIdAndUpdate(
+    const updateProject = await Project.findByIdAndUpdate(
       task.project_id,
       {
         $set: {
@@ -284,20 +344,19 @@ exports.updateTodoStatus = async (req, res) => {
       },
     );
 
+    await Notification.create({
+      project: updateProject.name,
+      name: `${task.title}`,
+      description: `${task.description}`,
+      user_id: updateProject.created_by,
+      message: `Task ${task.title} is ${completed ? "completed" : "not completed"}`,
+    });
+
     // 8. Success response
     return {
       status: true,
       responseCode: 200,
       message: "Todo status and project progress updated successfully",
-      // data: {
-      //   task_id: task._id,
-      //   todo_id,
-      //   completed,
-      //   project_id: task.project_id,
-      //   total_tasks: totalTasks,
-      //   completed_tasks: completedTasks,
-      //   progress,
-      // },
     };
   } catch (error) {
     console.error("Update Todo Status Error:", error);
@@ -388,7 +447,8 @@ exports.getTasks = async (req, res) => {
 
     // 4. Group tasks by status
     findTask.forEach((task) => {
-      const status = task.status_id?.status_type || "To Do";
+      const rawStatus = task.status_id?.status_type || "To Do";
+      const status = rawStatus === "To DO" ? "To Do" : rawStatus;
 
       if (!Object.hasOwn(groupedTasks, status)) {
         return;
@@ -400,6 +460,8 @@ exports.getTasks = async (req, res) => {
         description: task.description,
         priority: task.priority,
         due_date: task.due_date,
+        todos: task.todos || [],
+        attachments: task.attachments || [],
 
         project: task.project_id
           ? {
@@ -488,7 +550,8 @@ exports.getAllTasks = async (req, res) => {
 
     // 4. Group tasks by status
     findTask.forEach((task) => {
-      const status = task.status_id?.status_type || "To Do";
+      const rawStatus = task.status_id?.status_type || "To Do";
+      const status = rawStatus === "To DO" ? "To Do" : rawStatus;
 
       if (!Object.hasOwn(groupedTasks, status)) {
         return;
@@ -500,6 +563,8 @@ exports.getAllTasks = async (req, res) => {
         description: task.description,
         priority: task.priority,
         due_date: task.due_date,
+        todos: task.todos || [],
+        attachments: task.attachments || [],
 
         project: task.project_id
           ? {
@@ -591,14 +656,27 @@ exports.getParticulartask = async (req, res) => {
       ]);
 
     const response = {
+      task_id: findTask._id,
       title: findTask.title,
-      status: findTask.status_id.status_type,
+      status: {
+        status_id: findTask.status_id?._id || null,
+        status_type:
+          findTask.status_id?.status_type === "To DO"
+            ? "To Do"
+            : findTask.status_id?.status_type || "To Do",
+        color: findTask.status_id?.color || null,
+      },
       priority: findTask.priority,
       due_date: findTask.due_date,
       description: findTask.description,
       assigned_to: findTask.assigned_to,
       attachments: findTask.attachments,
-      project: findTask.project_id.name,
+      project: findTask.project_id
+        ? {
+            project_id: findTask.project_id._id,
+            name: findTask.project_id.name,
+          }
+        : null,
       todos: findTask.todos,
     };
 
@@ -629,7 +707,7 @@ exports.getParticulartask = async (req, res) => {
   }
 };
 
-exports.userWiseTasks = async (req, res) => {
+exports.userProfileTasks = async (req, res) => {
   const { id } = req;
   try {
     const findTask = await Task.find({ assigned_to: id })
@@ -734,6 +812,121 @@ exports.userActivity = async (req, res) => {
       status: false,
       responseCode: 500,
       message: "Failed to fetch recent activities",
+      db_error: error.message,
+    };
+  }
+};
+
+exports.userTasksCalander = async (req, res) => {
+  const { id } = req;
+  const { type } = req.query;
+
+  try {
+    let startDate;
+    let endDate;
+
+    // 1. Check week or month
+    if (type === "week") {
+      startDate = dayjs().format("YYYY-MM-DD");
+
+      endDate = dayjs().add(7, "day").format("YYYY-MM-DD");
+    } else if (type === "month") {
+      startDate = dayjs().startOf("month").format("YYYY-MM-DD");
+
+      endDate = dayjs().endOf("month").format("YYYY-MM-DD");
+    } else {
+      return {
+        status: false,
+        responseCode: 400,
+        message: "Invalid type. Use week or month",
+      };
+    }
+
+    // 2. Fetch tasks
+    const findTask = await Task.find({
+      assigned_to: id,
+      due_date: {
+        $gte: startDate,
+        $lte: endDate,
+      },
+    })
+      .select("title due_date priority status_id")
+      .sort({ due_date: 1 })
+      .lean();
+
+    // 3. Format response
+    const response = findTask.map((task) => ({
+      task_id: task._id,
+      title: task.title,
+      due_date: task.due_date,
+      priority: task.priority,
+      status_id: task.status_id,
+    }));
+
+    return {
+      status: true,
+      responseCode: 200,
+      message: "Calendar tasks fetched successfully",
+      filter: type,
+      start_date: startDate,
+      end_date: endDate,
+      total_tasks: response.length,
+      data: response,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      responseCode: 500,
+      message: "Failed to fetch calendar tasks",
+      db_error: error.message,
+    };
+  }
+};
+
+exports.taskStatusUpdate = async (req, res) => {
+  const { id } = req;
+  const { task_id, status_id } = req.body;
+
+  try {
+    // 1. Find task
+    const findTask = await Task.findById(task_id);
+
+    if (!findTask) {
+      return {
+        status: false,
+        responseCode: 404,
+        message: "Task not found",
+      };
+    }
+
+    const findStatus = await Status.findOne({
+      _id: status_id,
+      project_id: findTask.project_id,
+    });
+
+    if (!findStatus) {
+      return {
+        status: false,
+        responseCode: 404,
+        message: "Project status not found",
+      };
+    }
+
+    await Task.findByIdAndUpdate(task_id, {
+      $set: { status_id },
+      $addToSet: { updated_by: id },
+    });
+
+    return {
+      status: true,
+      responseCode: 200,
+      message: "Task status updated successfully",
+    };
+  } catch (error) {
+    return {
+      status: false,
+      responseCode: 500,
+      message: "Failed to update task status",
       db_error: error.message,
     };
   }

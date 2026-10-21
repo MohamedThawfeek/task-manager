@@ -6,6 +6,10 @@ const {
   updateUserProfile,
   getUserProfile,
   deleteUser,
+  updatePassword,
+  getAllUsers,
+  adminDeleteUser,
+  adminUpdateUser,
 } = require("../../handler/users");
 
 //hooks
@@ -15,7 +19,10 @@ const {
   ForgotPasswordSchema,
   ResetPasswordSchema,
   UpdateProfileSchema,
-} = require("../../utils/validation/users");
+  UpdatePasswordSchema,
+  AdminDeleteUserSchema,
+  AdminUpdateUserSchema,
+} = require("../../utils/validation/user");
 
 const yup = require("yup");
 
@@ -108,11 +115,68 @@ exports.GetUserProfile = async function (req, res) {
   }
 };
 
+exports.GetAllUsers = async function (req, res) {
+  try {
+    const response = await getAllUsers(req);
+    return res.status(response.responseCode).send(response);
+  } catch (err) {
+    return res.status(400).json({ message: err });
+  }
+};
+
 exports.DeleteUser = async function (req, res) {
   try {
     const response = await deleteUser(req);
     return res.status(response.responseCode).send(response);
   } catch (err) {
     return res.status(400).json({ message: err });
+  }
+};
+
+exports.UpdatePassword = async function (req, res) {
+  try {
+    await UpdatePasswordSchema.validate(req.body, { abortEarly: false });
+    const response = await updatePassword(req);
+    return res.status(response.responseCode).send(response);
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      const errorMessages = err.inner.reduce((acc, currentError) => {
+        acc[currentError.path] = currentError.message;
+        return acc;
+      }, {});
+      return res.status(400).json({ message: errorMessages });
+    }
+  }
+};
+
+exports.AdminDeleteUser = async function (req, res) {
+  try {
+    await AdminDeleteUserSchema.validate(req.body, { abortEarly: false });
+    const response = await adminDeleteUser(req);
+    return res.status(response.responseCode).send(response);
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      const errorMessages = err.inner.reduce((acc, currentError) => {
+        acc[currentError.path] = currentError.message;
+        return acc;
+      }, {});
+      return res.status(400).json({ message: errorMessages });
+    }
+  }
+};
+
+exports.adminUpdateUser = async function (req, res) {
+  try {
+    await AdminUpdateUserSchema.validate(req.body, { abortEarly: false });
+    const response = await adminUpdateUser(req);
+    return res.status(response.responseCode).send(response);
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      const errorMessages = err.inner.reduce((acc, currentError) => {
+        acc[currentError.path] = currentError.message;
+        return acc;
+      }, {});
+      return res.status(400).json({ message: errorMessages });
+    }
   }
 };

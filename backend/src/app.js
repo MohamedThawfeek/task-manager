@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const fileUpload = require("express-fileupload");
 const routes = require("./routes");
 const { connectMongo } = require("./config");
 
@@ -8,6 +9,12 @@ const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: "50kb" }));
+app.use(
+  fileUpload({
+    abortOnLimit: true,
+    limits: { fileSize: 1.5 * 1024 * 1024 },
+  }),
+);
 
 // app.use(
 //   "/api/auth/register-admin",
@@ -37,7 +44,7 @@ app.get("/", async (req, res) => {
 });
 
 app.get("/health", (req, res) => res.json({ ok: true }));
-app.use("/api", routes);
+app.use("/", routes);
 
 // 404 handler
 app.all("*", (req, res) => {

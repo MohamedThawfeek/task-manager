@@ -3,6 +3,13 @@ const {
   deleteTask,
   editTask,
   updateTodoStatus,
+  getAllTasks,
+  getParticulartask,
+  getTasks,
+  userActivity,
+  userTasksCalander,
+  userProfileTasks,
+  taskStatusUpdate,
 } = require("../../handler/tasks");
 
 //hooks
@@ -11,6 +18,8 @@ const {
   DeleteTaskSchema,
   EditTaskSchema,
   UpdateTodoStatusSchema,
+  ParticularTaskSchema,
+  TaskStatusUpdateSchema,
 } = require("../../utils/validation/task");
 
 const yup = require("yup");
@@ -67,6 +76,113 @@ exports.DeleteTask = async function (req, res) {
   try {
     await DeleteTaskSchema.validate(req.body, { abortEarly: false });
     const response = await deleteTask(req);
+    return res.status(response.responseCode).send(response);
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      const errorMessages = err.inner.reduce((acc, currentError) => {
+        acc[currentError.path] = currentError.message;
+        return acc;
+      }, {});
+      return res.status(400).json({ message: errorMessages });
+    }
+  }
+};
+
+exports.UserProfileTasks = async function (req, res) {
+  try {
+    const response = await userProfileTasks(req);
+    return res.status(response.responseCode).send(response);
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      const errorMessages = err.inner.reduce((acc, currentError) => {
+        acc[currentError.path] = currentError.message;
+        return acc;
+      }, {});
+      return res.status(400).json({ message: errorMessages });
+    }
+  }
+};
+
+exports.GetAllTasks = async function (req, res) {
+  try {
+    const response = await getAllTasks(req);
+    return res.status(response.responseCode).send(response);
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      const errorMessages = err.inner.reduce((acc, currentError) => {
+        acc[currentError.path] = currentError.message;
+        return acc;
+      }, {});
+      return res.status(400).json({ message: errorMessages });
+    }
+  }
+};
+
+exports.GetTasks = async function (req, res) {
+  try {
+    const response = await getTasks(req);
+    return res.status(response.responseCode).send(response);
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      const errorMessages = err.inner.reduce((acc, currentError) => {
+        acc[currentError.path] = currentError.message;
+        return acc;
+      }, {});
+      return res.status(400).json({ message: errorMessages });
+    }
+  }
+};
+
+exports.ParticularTask = async function (req, res) {
+  try {
+    await ParticularTaskSchema.validate(req.body, { abortEarly: false });
+    const response = await getParticulartask(req);
+    return res.status(response.responseCode).send(response);
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      const errorMessages = err.inner.reduce((acc, currentError) => {
+        acc[currentError.path] = currentError.message;
+        return acc;
+      }, {});
+      return res.status(400).json({ message: errorMessages });
+    }
+  }
+};
+
+exports.UserActivity = async function (req, res) {
+  try {
+    const response = await userActivity(req);
+    return res.status(response.responseCode).send(response);
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      const errorMessages = err.inner.reduce((acc, currentError) => {
+        acc[currentError.path] = currentError.message;
+        return acc;
+      }, {});
+      return res.status(400).json({ message: errorMessages });
+    }
+  }
+};
+
+exports.UserTasksCalander = async function (req, res) {
+  try {
+    const response = await userTasksCalander(req);
+    return res.status(response.responseCode).send(response);
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      const errorMessages = err.inner.reduce((acc, currentError) => {
+        acc[currentError.path] = currentError.message;
+        return acc;
+      }, {});
+      return res.status(400).json({ message: errorMessages });
+    }
+  }
+};
+
+exports.TaskStatusUpdate = async function (req, res) {
+  try {
+    await TaskStatusUpdateSchema.validate(req.body, { abortEarly: false });
+    const response = await taskStatusUpdate(req);
     return res.status(response.responseCode).send(response);
   } catch (err) {
     if (err instanceof yup.ValidationError) {

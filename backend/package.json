@@ -17,6 +17,7 @@
     "express-rate-limit": "^7.5.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.1",
+    "nodemailer": "^10.1.7",
     "p-queue": "^10.0.0",
     "yup": "^1.7.1"
   },

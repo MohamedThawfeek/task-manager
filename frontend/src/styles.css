@@ -39,6 +39,44 @@ a { color: inherit; text-decoration: none; }
 .field { width: 100%; min-height: 50px; border: 1px solid #d7deec; border-radius: 9px; background: #fff; padding: .75rem 1rem; outline: none; color: #17203b; transition: .15s ease; }
 .field:focus { border-color: #7167fa; box-shadow: 0 0 0 3px rgba(85,72,247,.1); }
 .field-error { border-color: #ff496c; }
+.react-datepicker-wrapper, .react-datepicker__input-container { width: 100%; }
+.react-datepicker-popper { z-index: 120 !important; }
+.react-datepicker { border: 1px solid #dfe4ef; border-radius: 13px; font-family: inherit; color: #17203b; box-shadow: 0 18px 45px rgba(21,31,59,.18); }
+.react-datepicker__header { position: relative; z-index: 2; border-radius: 13px 13px 0 0; border-bottom-color: #e7eaf2; background: #f6f7fb; padding-top: .65rem; }
+.react-datepicker__current-month { color: #17203b; font-size: .95rem; }
+.datepicker-custom-header { padding: 0 .45rem .25rem; }
+.datepicker-header-title { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.datepicker-header-title > button { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 7px; color: #71809d; transition: .15s ease; }
+.datepicker-header-title > button:hover { background: #ebe9ff; color: #5548f7; }
+.datepicker-header-title > strong { color: #17203b; font-size: .95rem; }
+.datepicker-header-selects { display: grid; grid-template-columns: minmax(0, 1fr) 88px; gap: .55rem; margin-top: .55rem; }
+.datepicker-select { min-width: 0; text-align: left; }
+.datepicker-select-trigger { display: flex; width: 100%; height: 34px; align-items: center; justify-content: space-between; gap: .35rem; border: 1px solid #d7deec; border-radius: 7px; background: #fff; color: #17203b; padding: 0 .65rem; font-size: .78rem; }
+.datepicker-select-trigger svg { flex: none; transition: transform .15s ease; }
+.datepicker-select-menu { position: absolute; z-index: 5; top: calc(100% + 5px); left: 0; width: 100%; max-height: 168px; overflow-y: auto; border: 1px solid #dfe4ef; border-radius: 8px; background: #fff; padding: .3rem; box-shadow: 0 12px 28px rgba(21,31,59,.2); }
+.datepicker-select-menu button { display: block; width: 100%; border-radius: 6px; padding: .42rem .55rem; color: #34415d; text-align: left; font-size: .78rem; }
+.datepicker-select-menu button:hover { background: #f3f4fa; }
+.datepicker-select-menu button.active { background: #eeecff; color: #5548f7; font-weight: 700; }
+.react-datepicker__day-name { color: #75829d; font-weight: 700; }
+.react-datepicker__day { border-radius: 7px; transition: .15s ease; }
+.react-datepicker__day:hover { background: #eeecff; color: #5548f7; }
+.react-datepicker__day--keyboard-selected { background: #eeecff; color: #5548f7; }
+.react-datepicker__day--selected, .react-datepicker__day--selected:hover { background: #5548f7; color: #fff; font-weight: 700; }
+.react-datepicker__navigation-icon::before { border-color: #697793; }
+.date-picker-input:focus-within svg { color: #5548f7; }
+.dark .react-datepicker { border-color: #35415d; background: #17213a; color: #eef2ff; }
+.dark .react-datepicker__header { border-bottom-color: #35415d; background: #111a30; }
+.dark .react-datepicker__current-month, .dark .react-datepicker__day, .dark .react-datepicker__day-name { color: #eef2ff; }
+.dark .datepicker-header-title > strong { color: #eef2ff; }
+.dark .datepicker-select-trigger, .dark .datepicker-select-menu { border-color: #35415d; background: #17213a; color: #eef2ff; }
+.dark .datepicker-select-menu button { color: #dbe2f5; }
+.dark .datepicker-select-menu button:hover { background: #25304a; }
+.dark .datepicker-select-menu button.active { background: #2c315d; color: #b9b4ff; }
+.dark .react-datepicker__day:hover, .dark .react-datepicker__day--keyboard-selected { background: #2c315d; color: #b9b4ff; }
+.dark .react-datepicker__day--selected, .dark .react-datepicker__day--selected:hover { background: #6b5cff; color: #fff; }
+.search-field { padding-left: 2.65rem; padding-right: 2.35rem; }
+.search-field::-webkit-search-cancel-button { appearance: none; }
+.search-control:focus-within .search-clear { color: #5548f7; }
 .label { display: block; margin-bottom: .45rem; font-size: .84rem; font-weight: 700; }
 .error-text { margin-top: .3rem; color: #ef476f; font-size: .78rem; }
 .tab { border: 1px solid #dfe5f0; border-radius: 9px; background: #fff; color: #8290ad; padding: .65rem 1.05rem; transition: .15s ease; }
