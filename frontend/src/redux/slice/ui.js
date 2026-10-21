@@ -6,7 +6,6 @@ const uiSlice = createSlice({
   name: 'ui',
   initialState: {
     theme: preferredDark ? 'dark' : 'light',
-    sidebarOpen: false,
   },
   reducers: {
     toggleTheme(state) {
@@ -17,14 +16,8 @@ const uiSlice = createSlice({
       state.theme = action.payload
       localStorage.setItem('taskflow_theme', action.payload)
     },
-    toggleSidebar(state) {
-      state.sidebarOpen = !state.sidebarOpen
-    },
-    closeSidebar(state) {
-      state.sidebarOpen = false
-    },
   },
 })
 
-export const { toggleTheme, setTheme, toggleSidebar, closeSidebar } = uiSlice.actions
+export const { toggleTheme, setTheme } = uiSlice.actions
 export default uiSlice.reducer

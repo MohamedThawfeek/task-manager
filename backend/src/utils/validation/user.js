@@ -22,7 +22,8 @@ exports.LoginSchema = yup
 exports.UpdateProfileSchema = yup
   .object({
     name: yup.string().trim().required("Name is required."),
-    password: yup.string().trim().required("Password is required."),
+    role: yup.string().trim().nullable(true),
+    phone: yup.string().trim().nullable(true),
   })
   .noUnknown(true, "Unknown field is not allowed.");
 

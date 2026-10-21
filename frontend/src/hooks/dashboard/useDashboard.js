@@ -5,7 +5,9 @@ import { selectTeamRows } from '../../redux/slice/team'
 
 export default function useDashboard() {
   const navigate = useNavigate()
-  const { tasks, projects } = useSelector((state) => state.workspace)
+  const tasks = useSelector((state) => state.task.items)
+  const projects = useSelector((state) => state.project.items)
+  const user = useSelector((state) => state.auth.user)
   const team = useSelector(selectTeamRows)
   const completed = tasks.filter((task) => task.status === 'Done').length
   const inProgress = tasks.filter((task) => task.status === 'In Progress').length
@@ -29,6 +31,7 @@ export default function useDashboard() {
 
   return {
     navigate,
+    user,
     tasks,
     projects,
     team,

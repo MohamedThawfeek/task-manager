@@ -1,32 +1,48 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../redux/hooks'
-import { selectLoader, setLoader } from '../../redux/slice/initialLoader'
-import { selectTeamState, setTeamError, setTeamRows } from '../../redux/slice/team'
-import { createUser, deleteUser, getUsers, updateUser } from '../../service/user'
+import {
+  selectTeamState,
+  setTeamDeleting,
+  setTeamError,
+  setTeamLoading,
+  setTeamRows,
+  setTeamSubmitting,
+} from '../../redux/slice/team'
+import api from '../../service/axios'
+import { apiPath } from '../../service/path'
+import { formatUser } from '../../utils/apiData'
 import toast from 'react-hot-toast'
+import Formhandel from '../../components/formik/FormikFields'
+import { memberSchema } from '../../validations/forms'
 
 export default function useTeam() {
   const dispatch = useAppDispatch()
-  const { rows, error } = useAppSelector(selectTeamState)
-  const isLoading = useAppSelector(selectLoader('teamList'))
-  const isSubmitting = useAppSelector(selectLoader('teamSubmit'))
-  const isDeleting = useAppSelector(selectLoader('teamDelete'))
+  const {
+    rows,
+    error,
+    loading: isLoading,
+    submitting: isSubmitting,
+    deleting: isDeleting,
+  } = useAppSelector(selectTeamState)
   const [modal, setModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [deleting, setDeleting] = useState(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   const loadTeam = useCallback(async () => {
-    dispatch(setLoader({ key: 'teamList', value: true }))
+    dispatch(setTeamLoading(true))
     dispatch(setTeamError(''))
     try {
-      const users = await getUsers()
+      const response = await api.get(apiPath.users, 'Unable to load users')
+      const users = (Array.isArray(response.users) ? response.users : [])
+        .map(formatUser)
       dispatch(setTeamRows(users))
       return users
     } catch (error) {
       dispatch(setTeamError(error.message || 'Unable to load users'))
       throw error
     } finally {
-      dispatch(setLoader({ key: 'teamList', value: false }))
+      dispatch(setTeamLoading(false))
     }
   }, [dispatch])
 
@@ -37,6 +53,7 @@ export default function useTeam() {
   const closeModal = () => {
     setModal(false)
     setEditing(null)
+    setShowPassword(false)
   }
   const openCreate = () => {
     setEditing(null)
@@ -47,16 +64,24 @@ export default function useTeam() {
     setModal(true)
   }
   const saveMember = async (data) => {
-    dispatch(setLoader({ key: 'teamSubmit', value: true }))
+    dispatch(setTeamSubmitting(true))
     dispatch(setTeamError(''))
     try {
       let result
       if (editing) {
         const payload = { id: editing.id, ...data }
         if (!payload.password) delete payload.password
-        result = await updateUser(payload)
+        result = await api.patch(
+          apiPath.updateUser,
+          payload,
+          'Unable to update user',
+        )
       } else {
-        result = await createUser(data)
+        result = await api.post(
+          apiPath.createUser,
+          data,
+          'Unable to create user',
+        )
       }
       await loadTeam()
       toast.success(result.message || (editing ? 'User updated successfully' : 'User created successfully'))
@@ -65,22 +90,47 @@ export default function useTeam() {
       dispatch(setTeamError(error.message || 'Unable to save user'))
       toast.error(error.message || 'Unable to save user')
     } finally {
-      dispatch(setLoader({ key: 'teamSubmit', value: false }))
+      dispatch(setTeamSubmitting(false))
     }
   }
+
+  const normalizedStatus = editing?.status === 'Inactive'
+    || String(editing?.status).toLowerCase() === 'inactive'
+    ? 'Inactive'
+    : 'Active'
+
+  const memberForm = Formhandel({
+    initialValue: {
+      name: editing?.name || '',
+      email: editing?.email || '',
+      password: '',
+      phone: editing?.phone || '',
+      role: editing?.role || '',
+      access: editing?.access || 'User',
+      status: normalizedStatus,
+    },
+    schema: memberSchema(Boolean(editing)),
+    submitFunction: saveMember,
+    enableReinitialize: true,
+  })
   const removeMember = async () => {
     if (!deleting) return
-    dispatch(setLoader({ key: 'teamDelete', value: true }))
+    dispatch(setTeamDeleting(true))
     dispatch(setTeamError(''))
     try {
-      const result = await deleteUser(deleting.id)
+      const result = await api.delete(
+        apiPath.deleteUser,
+        { id: deleting.id },
+        'Unable to delete user',
+      )
       await loadTeam()
+      setDeleting(null)
       toast.success(result.message || 'User deleted successfully')
     } catch (error) {
       dispatch(setTeamError(error.message || 'Unable to delete user'))
       toast.error(error.message || 'Unable to delete user')
     } finally {
-      dispatch(setLoader({ key: 'teamDelete', value: false }))
+      dispatch(setTeamDeleting(false))
     }
   }
 
@@ -93,6 +143,9 @@ export default function useTeam() {
     isMutating: isSubmitting || isDeleting,
     modal,
     editing,
+    memberForm,
+    showPassword,
+    setShowPassword,
     deleting,
     setDeleting,
     loadTeam,

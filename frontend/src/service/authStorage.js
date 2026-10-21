@@ -16,6 +16,8 @@ export function loadStoredAuth() {
 export function saveStoredAuth(auth) {
   if (!auth?.token) return clearStoredAuth()
 
+  window.localStorage.removeItem('token')
+
   if (auth.remember) {
     window.localStorage.setItem(AUTH_KEY, JSON.stringify(auth))
     window.sessionStorage.removeItem(AUTH_KEY)
@@ -29,4 +31,5 @@ export function saveStoredAuth(auth) {
 export function clearStoredAuth() {
   window.localStorage.removeItem(AUTH_KEY)
   window.sessionStorage.removeItem(AUTH_KEY)
+  window.localStorage.removeItem('token')
 }

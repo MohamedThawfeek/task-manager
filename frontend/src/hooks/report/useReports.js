@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 const statuses = ['To Do', 'In Progress', 'Review', 'Done']
 
 export default function useReports() {
-  const tasks = useSelector((state) => state.workspace.tasks)
+  const tasks = useSelector((state) => state.task.items)
   const completed = tasks.filter((task) => task.status === 'Done').length
   const overdue = tasks.filter((task) => (
     dayjs(task.dueDate).isBefore(dayjs(), 'day') && task.status !== 'Done'

@@ -357,14 +357,13 @@ exports.getParticularProject = async (req, res) => {
             : task.status_id?.status_type || "To Do",
         priority: task.priority,
         due_date: task.due_date,
+        attachments: task.attachments,
       })),
-      teams: project.project_access
-        .filter(Boolean)
-        .map((user) => ({
-          id: user._id,
-          name: user.name,
-          role: user.role,
-        })),
+      teams: project.project_access.filter(Boolean).map((user) => ({
+        id: user._id,
+        name: user.name,
+        role: user.role,
+      })),
     };
 
     return {

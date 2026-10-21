@@ -1,14 +1,23 @@
 const { Notification } = require("../../models");
 
 exports.updateNotification = async (req, res) => {
+  const { id } = req;
   try {
     const { notification_id } = req.body;
 
-    const updateNotification = await Notification.findByIdAndUpdate(
-      notification_id,
+    const updateNotification = await Notification.findOneAndUpdate(
+      { _id: notification_id, user_id: id },
       { $set: { read: true } },
       { new: true, runValidators: true },
     );
+
+    if (!updateNotification) {
+      return {
+        status: false,
+        responseCode: 404,
+        message: "Notification not found",
+      };
+    }
 
     return {
       status: true,

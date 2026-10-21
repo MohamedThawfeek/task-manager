@@ -4,6 +4,7 @@ export const apiPath = {
   forgotPassword: '/users/forgot-password',
   resetPassword: '/users/reset-password',
   profile: '/users/profile',
+  updateProfile: '/users/update-profile',
   updatePassword: '/users/update-password',
   users: '/users/users',
   createUser: '/users/register',
@@ -25,6 +26,10 @@ export const apiPath = {
   task: '/task/particular-task',
   userActivity: '/task/user-activity',
   userProfileTasks: '/task/user-profile-tasks',
+  createComment: '/comment/create-command',
+  comments: '/comment/get-commands',
+  notifications: '/notification/notifications',
+  updateNotification: '/notification/update',
 }
 
 export default apiPath

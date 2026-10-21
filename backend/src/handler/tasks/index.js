@@ -278,12 +278,41 @@ exports.updateTodoStatus = async (req, res) => {
   const { task_id, todo_id, completed } = req.body;
 
   try {
-    // 2. Update specific todo
+    // Check the task and todo independently from access permissions. Keeping
+    // `assigned_to` in this query caused admins/creators to receive a false 404.
+    const existingTask = await Task.findOne({
+      _id: task_id,
+      "todos._id": todo_id,
+    }).select("assigned_to created_by project_id");
+
+    if (!existingTask) {
+      return {
+        status: false,
+        responseCode: 404,
+        message: "Task or Todo not found",
+      };
+    }
+
+    const requestingUser = await User.findById(id).select("access").lean();
+    const isAdmin = requestingUser?.access === "Admin";
+    const isCreator = existingTask.created_by?.equals(id);
+    const isAssignee = existingTask.assigned_to.some((userId) =>
+      userId.equals(id),
+    );
+
+    if (!isAdmin && !isCreator && !isAssignee) {
+      return {
+        status: false,
+        responseCode: 403,
+        message: "You do not have permission to update this todo",
+      };
+    }
+
+    // Update the matched todo atomically after access has been verified.
     const task = await Task.findOneAndUpdate(
       {
         _id: task_id,
         "todos._id": todo_id,
-        assigned_to: id,
       },
       {
         $set: {
@@ -301,6 +330,7 @@ exports.updateTodoStatus = async (req, res) => {
       },
     );
 
+    // The todo may have been removed between the read and update operations.
     if (!task) {
       return {
         status: false,

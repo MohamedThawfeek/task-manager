@@ -2,76 +2,101 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
-import { selectLoader, setLoader } from '../../redux/slice/initialLoader'
 import {
-  getUserActivity,
-  getUserProfileProjects,
-  getUserProfileTasks,
-} from '../../service/task'
+  selectProfileState,
+  setProfileActivities,
+  setProfileActivityLoading,
+  setProfileError,
+  setProfileProjects,
+  setProfileProjectsLoading,
+  setProfileTasks,
+  setProfileTasksLoading,
+} from '../../redux/slice/profile'
+import api from '../../service/axios'
+import { apiPath } from '../../service/path'
+import { formatProject, getId, normalizeTask } from '../../utils/apiData'
 
 export default function useProfile() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const workspaceProfile = useSelector((state) => state.workspace.profile)
+  const profileState = useSelector(selectProfileState)
   const authUser = useSelector((state) => state.auth.user)
-  const taskLoading = useSelector(selectLoader('profileTasks'))
-  const projectLoading = useSelector(selectLoader('profileProjects'))
-  const activityLoading = useSelector(selectLoader('profileActivity'))
   const [tab, setTab] = useState('Overview')
-  const [assignedTasks, setAssignedTasks] = useState([])
-  const [assignedProjects, setAssignedProjects] = useState([])
-  const [activities, setActivities] = useState([])
-  const [error, setError] = useState('')
+  const profileDetails = profileState.details
+  const assignedTasks = profileState.tasks
+  const assignedProjects = profileState.projects
+  const activities = profileState.activities
   const profile = useMemo(() => ({
-    ...workspaceProfile,
+    ...profileDetails,
     ...authUser,
-    id: authUser?._id || authUser?.id || workspaceProfile.id,
-    jobTitle: authUser?.role || authUser?.jobTitle || workspaceProfile.jobTitle,
-    avatar: authUser?.profile || authUser?.avatar || workspaceProfile.avatar,
-  }), [authUser, workspaceProfile])
+    id: authUser?._id || authUser?.id || profileDetails.id,
+    jobTitle: authUser?.role || authUser?.jobTitle || profileDetails.jobTitle,
+    avatar: authUser?.profile || authUser?.avatar || profileDetails.avatar,
+  }), [authUser, profileDetails])
 
   const loadTasks = useCallback(async () => {
-    dispatch(setLoader({ key: 'profileTasks', value: true }))
-    setError('')
+    dispatch(setProfileTasksLoading(true))
+    dispatch(setProfileError(''))
     try {
-      const rows = await getUserProfileTasks()
-      setAssignedTasks(rows)
+      const response = await api.get(
+        apiPath.userProfileTasks,
+        'Unable to load profile tasks',
+      )
+      const rows = (Array.isArray(response.data) ? response.data : [])
+        .map((task) => normalizeTask(task))
+      dispatch(setProfileTasks(rows))
       return rows
     } catch (requestError) {
-      setError(requestError.message || 'Unable to load profile tasks')
+      dispatch(setProfileError(requestError.message || 'Unable to load profile tasks'))
       throw requestError
     } finally {
-      dispatch(setLoader({ key: 'profileTasks', value: false }))
+      dispatch(setProfileTasksLoading(false))
     }
   }, [dispatch])
 
   const loadProjects = useCallback(async () => {
-    dispatch(setLoader({ key: 'profileProjects', value: true }))
-    setError('')
+    dispatch(setProfileProjectsLoading(true))
+    dispatch(setProfileError(''))
     try {
-      const rows = await getUserProfileProjects()
-      setAssignedProjects(rows)
+      const response = await api.get(
+        apiPath.userProjects,
+        'Unable to load profile projects',
+      )
+      const rows = (Array.isArray(response.projects) ? response.projects : [])
+        .map(formatProject)
+      dispatch(setProfileProjects(rows))
       return rows
     } catch (requestError) {
-      setError(requestError.message || 'Unable to load profile projects')
+      dispatch(setProfileError(requestError.message || 'Unable to load profile projects'))
       throw requestError
     } finally {
-      dispatch(setLoader({ key: 'profileProjects', value: false }))
+      dispatch(setProfileProjectsLoading(false))
     }
   }, [dispatch])
 
   const loadActivity = useCallback(async () => {
-    dispatch(setLoader({ key: 'profileActivity', value: true }))
-    setError('')
+    dispatch(setProfileActivityLoading(true))
+    dispatch(setProfileError(''))
     try {
-      const rows = await getUserActivity()
-      setActivities(rows)
+      const response = await api.get(
+        apiPath.userActivity,
+        'Unable to load recent activity',
+      )
+      const rows = (Array.isArray(response.data) ? response.data : [])
+        .map((activity) => ({
+          ...activity,
+          id: `${getId(activity.task_id)}-${getId(activity.todo_id)}`,
+          taskId: getId(activity.task_id),
+          todoId: getId(activity.todo_id),
+          updatedAt: activity.updated_at,
+        }))
+      dispatch(setProfileActivities(rows))
       return rows
     } catch (requestError) {
-      setError(requestError.message || 'Unable to load recent activity')
+      dispatch(setProfileError(requestError.message || 'Unable to load recent activity'))
       throw requestError
     } finally {
-      dispatch(setLoader({ key: 'profileActivity', value: false }))
+      dispatch(setProfileActivityLoading(false))
     }
   }, [dispatch])
 
@@ -105,10 +130,10 @@ export default function useProfile() {
     completed,
     inProgress,
     overdue,
-    error,
-    taskLoading,
-    projectLoading,
-    activityLoading,
+    error: profileState.error,
+    taskLoading: profileState.tasksLoading,
+    projectLoading: profileState.projectsLoading,
+    activityLoading: profileState.activityLoading,
     loadTasks,
     loadProjects,
     loadActivity,

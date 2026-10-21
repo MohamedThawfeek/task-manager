@@ -1,11 +1,12 @@
 const { Commands, Task, User, Notification } = require("../../models");
 
 exports.createCommand = async (req, res) => {
+  const { id } = req;
+  const { task_id, command } = req.body;
   try {
-    const { task_id, command, created_by } = req.body;
     const [task, user] = await Promise.all([
       Task.findById(task_id).populate("project_id", "name"),
-      User.findById(created_by),
+      User.findById(id),
     ]);
     if (!task) {
       return {
@@ -21,7 +22,7 @@ exports.createCommand = async (req, res) => {
         message: "User not found",
       };
     }
-    await Commands.create({ task_id, command, created_by });
+    await Commands.create({ task_id, command, created_by: id });
 
     await Promise.all(
       task.assigned_to.map(async (user_id) => {
@@ -51,11 +52,19 @@ exports.createCommand = async (req, res) => {
 };
 
 exports.getCommands = async (req, res) => {
+  const { task_id } = req.query;
   try {
-    const { task_id } = req.params;
+    if (!task_id) {
+      return {
+        status: false,
+        responseCode: 400,
+        message: "Task ID is required",
+      };
+    }
     const commands = await Commands.find({ task_id })
       .populate("created_by", "name")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     return {
       status: true,
       responseCode: 200,

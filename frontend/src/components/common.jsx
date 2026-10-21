@@ -34,10 +34,10 @@ export function Modal({ open, onClose, title, children, size = '620px' }) {
   </div>
 }
 
-export function ConfirmModal({ open, onClose, onConfirm, title = 'Are you sure?', body = 'This action cannot be undone.' }) {
+export function ConfirmModal({ open, onClose, onConfirm, title = 'Are you sure?', body = 'This action cannot be undone.', confirmLabel = 'Delete' }) {
   return <Modal open={open} onClose={onClose} title={title} size="440px">
     <p className="muted text-[#7785a0]">{body}</p>
-    <div className="mt-6 flex justify-end gap-3"><button className="secondary-btn" onClick={onClose}>Cancel</button><button className="danger-btn" onClick={() => { onConfirm(); onClose() }}>Delete</button></div>
+    <div className="mt-6 flex justify-end gap-3"><button className="secondary-btn" onClick={onClose}>Cancel</button><button className="danger-btn" onClick={() => { onConfirm(); onClose() }}>{confirmLabel}</button></div>
   </Modal>
 }
 

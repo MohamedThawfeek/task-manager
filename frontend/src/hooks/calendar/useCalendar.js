@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 
 export default function useCalendar() {
-  const tasks = useSelector((state) => state.workspace.tasks)
+  const tasks = useSelector((state) => state.task.items)
   const navigate = useNavigate()
   const [view, setView] = useState('Month')
   const month = dayjs().startOf('month')
@@ -16,9 +16,12 @@ export default function useCalendar() {
     const due = dayjs(task.dueDate)
     return due.year() === month.year() && due.month() === month.month() && due.date() === day
   })
+  const eventsForDate = (date) => tasks.filter((task) => (
+    dayjs(task.dueDate).isSame(date, 'day')
+  ))
   const weekStart = dayjs().startOf('week')
   const weekDays = Array.from({ length: 7 }, (_, index) => weekStart.add(index, 'day'))
-  const hours = Array.from({ length: 10 }, (_, index) => index + 8)
+  const todayTasks = eventsForDate(dayjs())
 
   return {
     tasks,
@@ -28,7 +31,8 @@ export default function useCalendar() {
     month,
     cells,
     renderEvents,
+    eventsForDate,
     weekDays,
-    hours,
+    todayTasks,
   }
 }

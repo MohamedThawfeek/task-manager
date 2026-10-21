@@ -1,24 +1,22 @@
 import { combineReducers } from '@reduxjs/toolkit'
-import { resetStore } from '../actions'
-import auth from "./auth";
-import notifications from "./notifications";
-import ui from "./ui";
-import workspace from "./workspace";
-import loader from "./initialLoader";
-import team from "./team";
+import auth from './auth'
+import notifications from './notifications'
+import profile from './profile'
+import project from './project'
+import task from './task'
+import team from './team'
+import ui from './ui'
+import sidebar from './sidebar'
 
-const combinedReducer = combineReducers({
+const rootReducer = combineReducers({
   auth,
-  workspace,
+  project,
+  task,
+  profile,
   team,
-  loader,
   ui,
   notifications,
+  sidebar,
 })
-
-const rootReducer = (state, action) => {
-  if (resetStore.match(action)) return combinedReducer(undefined, action)
-  return combinedReducer(state, action)
-}
 
 export default rootReducer

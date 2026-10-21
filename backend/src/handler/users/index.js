@@ -109,7 +109,7 @@ exports.Login = async (req, res) => {
 };
 
 exports.updateUserProfile = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req;
   const { name, role, phone } = req.body;
   const { profile } = req.files || {};
   try {
@@ -128,11 +128,6 @@ exports.updateUserProfile = async (req, res) => {
       profileBuffer = await fileToBase64(profile);
     }
 
-    let hashedPassword;
-
-    if (password) {
-      hashedPassword = await bcrypt.hash(password, 10);
-    }
     const payload = {
       name,
       ...(profileBuffer && { profile: profileBuffer }),
@@ -140,28 +135,22 @@ exports.updateUserProfile = async (req, res) => {
       role,
     };
 
-    await User.findByIdAndUpdate(id, payload);
+    const updatedUser = await User.findByIdAndUpdate(id, payload, {
+      new: true,
+      runValidators: true,
+    }).select("-password -__v");
 
-    if (password) {
-      emailQueue.add(() =>
-        PasswordresetSuccess({
-          toEmail: user.email,
-          name: user.name,
-          loginUrl: `${process.env.BASE_URL}/login`,
-          supportEmail: "info@taskmanager.com",
-        }),
-      );
-    }
     return {
       status: true,
       responseCode: 200,
       message: "User updated successfully",
+      user: updatedUser,
     };
   } catch (error) {
     return {
       status: false,
       responseCode: 500,
-      message: "Failed to reset password",
+      message: "Failed to update user profile",
       db_error: error,
     };
   }
@@ -207,9 +196,7 @@ exports.updatePassword = async (req, res) => {
 exports.getUserProfile = async (req, res) => {
   const { id } = req;
   try {
-    const user = await User.findById(id).select(
-      "-__v -password -createdAt -updatedAt",
-    );
+    const user = await User.findById(id).select("-__v -password");
     if (!user) {
       return {
         status: false,
@@ -246,14 +233,6 @@ exports.forgotPassword = async (req, res) => {
       };
     }
 
-    if (user && user.password === null) {
-      return {
-        status: false,
-        responseCode: 404,
-        message: "Please register your account",
-      };
-    }
-
     const generateToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "15m",
     });
@@ -272,7 +251,7 @@ exports.forgotPassword = async (req, res) => {
     return {
       status: true,
       responseCode: 200,
-      message: "OTP sent successfully",
+      message: "Reset link sent successfully",
     };
   } catch (error) {
     return {
