@@ -126,27 +126,37 @@ export default function AppLayout() {
                     </button>
                   </div>
                   <div className="mt-2">
-                    {notifications.length ? notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        className="border-b border-[#edf0f5] py-3 last:border-0"
-                      >
-                        <div className="flex gap-2">
-                          <span
-                            className={`mt-1.5 h-2 w-2 rounded-full ${n.read ? "bg-[#cad2e0]" : "bg-primary"}`}
-                          />
-                          <div>
-                            <p className="text-sm font-bold">{n.title}</p>
-                            <p className="mt-1 text-xs leading-5 text-muted">
-                              {n.message}
-                            </p>
-                            <p className="mt-1 text-[11px] text-muted">
-                              {n.createdAt ? dayjs(n.createdAt).format("MMM D, YYYY h:mm A") : ""}
-                            </p>
+                    {notifications.length ? (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          className="border-b border-[#edf0f5] py-3 last:border-0"
+                        >
+                          <div className="flex gap-2">
+                            <span
+                              className={`mt-1.5 h-2 w-2 rounded-full ${n.read ? "bg-[#cad2e0]" : "bg-primary"}`}
+                            />
+                            <div>
+                              <p className="text-sm font-bold">{n.title}</p>
+                              <p className="mt-1 text-xs leading-5 text-muted">
+                                {n.message}
+                              </p>
+                              <p className="mt-1 text-[11px] text-muted">
+                                {n.createdAt
+                                  ? dayjs(n.createdAt).format(
+                                      "MMM D, YYYY h:mm A",
+                                    )
+                                  : ""}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )) : <p className="py-6 text-center text-sm text-muted">No notifications</p>}
+                      ))
+                    ) : (
+                      <p className="py-6 text-center text-sm text-muted">
+                        No notifications
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -188,13 +198,13 @@ export default function AppLayout() {
                     <UserRound size={16} />
                     My Profile
                   </button>
-                  <button
+                  {/* <button
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#ef476f] hover:bg-[#fff1f4]"
                     onClick={() => setLogoutPopup(true)}
                   >
                     <LogOut size={16} />
                     Sign out
-                  </button>
+                  </button> */}
                 </div>
               )}
             </div>
