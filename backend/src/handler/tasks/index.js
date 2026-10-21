@@ -852,6 +852,15 @@ exports.userTasksCalander = async (req, res) => {
   const { type } = req.query;
 
   try {
+    const findUser = await User.findById(id);
+
+    if (!findUser) {
+      return {
+        status: false,
+        responseCode: 404,
+        message: "User not found",
+      };
+    }
     let startDate;
     let endDate;
 
@@ -872,9 +881,11 @@ exports.userTasksCalander = async (req, res) => {
       };
     }
 
+    const isAdmin = findUser.access !== "Admin";
+
     // 2. Fetch tasks
     const findTask = await Task.find({
-      assigned_to: id,
+      ...(isAdmin && { assigned_to: id }),
       due_date: {
         $gte: startDate,
         $lte: endDate,

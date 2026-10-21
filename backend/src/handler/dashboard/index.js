@@ -1,4 +1,4 @@
-const { Task, Project, User, Status, Access } = require("../../models");
+const { Task, Project, User, Status } = require("../../models");
 const dayjs = require("dayjs");
 const mongoose = require("mongoose");
 
@@ -70,90 +70,82 @@ exports.dashboardUserTaskCount = async (req, res) => {
   }
 };
 
-exports.dashbaordUserProjects = async (req, res) => {
+exports.dashboardUserProjects = async (req) => {
   const { id } = req;
 
   try {
-    // 1. Find projects accessible to the logged-in user
-    const findAccess = await Access.find({
-      user_id: id,
-    })
-      .select("project_id")
-      .lean();
-
-    const projectIds = findAccess
-      .map((access) => access.project_id)
-      .filter(Boolean);
-
-    // 2. Get latest 3 projects
+    // Get the latest projects assigned to the logged-in user.
     const projects = await Project.find({
-      _id: { $in: projectIds },
+      project_access: id,
     })
       .sort({ createdAt: -1 })
       .limit(3)
-      .lean();
-
-    const latestProjectIds = projects.map((project) => project._id);
-
-    // 3. Find project members
-    const findUsers = await Access.find({
-      project_id: { $in: latestProjectIds },
-    })
+      .select("name status due_date project_access createdAt")
       .populate({
-        path: "user_id",
+        path: "project_access",
         select: "name email",
         model: User,
       })
       .lean();
 
-    // 4. Find project tasks
+    const projectIds = projects.map((project) => project._id);
+
+    // Load the project tasks once, then group their statistics by project.
     const tasks = await Task.find({
-      project_id: { $in: latestProjectIds },
+      project_id: { $in: projectIds },
     })
       .select("project_id todos")
       .lean();
 
-    // 5. Generate project response
-    const response = projects.map((project) => {
-      // Project members
-      const members = findUsers
-        .filter(
-          (access) => access.project_id?.toString() === project._id.toString(),
-        )
-        .map((access) => access.user_id)
-        .filter(Boolean);
+    const taskStats = new Map();
 
-      // Remove duplicate members
+    tasks.forEach((task) => {
+      if (!task.project_id) return;
+
+      const projectId = task.project_id.toString();
+      const stats = taskStats.get(projectId) || {
+        totalTasks: 0,
+        completedTasks: 0,
+      };
+      const todos = Array.isArray(task.todos) ? task.todos : [];
+      const isCompleted =
+        todos.length > 0 && todos.every((todo) => todo.completed === true);
+
+      stats.totalTasks += 1;
+      if (isCompleted) stats.completedTasks += 1;
+      taskStats.set(projectId, stats);
+    });
+
+    const response = projects.map((project) => {
+      const projectId = project._id.toString();
+      const members = Array.isArray(project.project_access)
+        ? project.project_access.filter(Boolean)
+        : [];
       const uniqueMembers = [
         ...new Map(members.map((user) => [user._id.toString(), user])).values(),
       ];
-
-      // Project tasks
-      const projectTasks = tasks.filter(
-        (task) => task.project_id?.toString() === project._id.toString(),
-      );
-
-      const totalTasks = projectTasks.length;
-
-      // Completed tasks
-      const completedTasks = projectTasks.filter(
-        (task) =>
-          task.todos.length > 0 && task.todos.every((todo) => todo.completed),
-      ).length;
-
-      // Calculate completion percentage
+      const stats = taskStats.get(projectId) || {
+        totalTasks: 0,
+        completedTasks: 0,
+      };
       const progress =
-        totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        stats.totalTasks > 0
+          ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
+          : 0;
 
       return {
         project_id: project._id,
         name: project.name,
         status: project.status,
-        due_date: project.createdAt,
-        total_tasks: totalTasks,
+        due_date: project.due_date ?? null,
+        total_tasks: stats.totalTasks,
         total_members: uniqueMembers.length,
-        members: uniqueMembers,
-        completed_tasks: completedTasks,
+        members: uniqueMembers.map((user) => ({
+          id: user._id,
+          name: user.name,
+          email: user.email,
+        })),
+        completed_tasks: stats.completedTasks,
         progress,
       };
     });

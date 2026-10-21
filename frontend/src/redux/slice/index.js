@@ -7,6 +7,8 @@ import task from './task'
 import team from './team'
 import ui from './ui'
 import sidebar from './sidebar'
+import dashboard from './dashboard'
+import report from './report'
 
 const rootReducer = combineReducers({
   auth,
@@ -17,6 +19,8 @@ const rootReducer = combineReducers({
   ui,
   notifications,
   sidebar,
+  dashboard,
+  report,
 })
 
 export default rootReducer

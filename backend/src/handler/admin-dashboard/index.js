@@ -1,4 +1,4 @@
-const { Task, Project, User, Status, Access } = require("../../models");
+const { Task, Project, User, Status } = require("../../models");
 const dayjs = require("dayjs");
 const mongoose = require("mongoose");
 
@@ -66,81 +66,78 @@ exports.dashboardAdminTaskCount = async (req, res) => {
   }
 };
 
-exports.dashbaordAdminProjects = async (req, res) => {
+exports.dashboardAdminProjects = async () => {
   try {
-    // 1. Get latest 3 projects
+    // Get the latest three projects with their assigned members.
     const projects = await Project.find({})
       .sort({ createdAt: -1 })
       .limit(3)
+      .select("name status due_date project_access createdAt")
+      .populate({
+        path: "project_access",
+        select: "name email",
+        model: User,
+      })
       .lean();
 
     const projectIds = projects.map((project) => project._id);
 
-    // 2. Get members and tasks
-    const [findUsers, tasks] = await Promise.all([
-      Access.find({
-        project_id: { $in: projectIds },
-      })
-        .populate({
-          path: "user_id",
-          select: "name email",
-          model: User,
-        })
-        .lean(),
+    // Load the tasks once, then group their statistics by project.
+    const tasks = await Task.find({
+      project_id: { $in: projectIds },
+    })
+      .select("project_id todos")
+      .lean();
 
-      Task.find({
-        project_id: { $in: projectIds },
-      })
-        .select("project_id todos")
-        .lean(),
-    ]);
+    const taskStats = new Map();
 
-    // 3. Generate response
+    tasks.forEach((task) => {
+      if (!task.project_id) return;
+
+      const projectId = task.project_id.toString();
+      const stats = taskStats.get(projectId) || {
+        totalTasks: 0,
+        completedTasks: 0,
+      };
+      const todos = Array.isArray(task.todos) ? task.todos : [];
+      const isCompleted =
+        todos.length > 0 && todos.every((todo) => todo.completed === true);
+
+      stats.totalTasks += 1;
+      if (isCompleted) stats.completedTasks += 1;
+      taskStats.set(projectId, stats);
+    });
+
     const response = projects.map((project) => {
       const projectId = project._id.toString();
-
-      // Find project members
-      const members = findUsers
-        .filter((access) => access.project_id?.toString() === projectId)
-        .map((access) => access.user_id)
-        .filter(Boolean);
-
-      // Remove duplicate members
+      const members = Array.isArray(project.project_access)
+        ? project.project_access.filter(Boolean)
+        : [];
       const uniqueMembers = [
         ...new Map(members.map((user) => [user._id.toString(), user])).values(),
       ];
-
-      // Find project tasks
-      const projectTasks = tasks.filter(
-        (task) => task.project_id?.toString() === projectId,
-      );
-
-      const totalTasks = projectTasks.length;
-
-      // Count completed tasks
-      const completedTasks = projectTasks.filter(
-        (task) =>
-          task.todos?.length > 0 &&
-          task.todos.every((todo) => todo.completed === true),
-      ).length;
-
-      // Calculate progress
+      const stats = taskStats.get(projectId) || {
+        totalTasks: 0,
+        completedTasks: 0,
+      };
       const progress =
-        totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        stats.totalTasks > 0
+          ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
+          : 0;
 
       return {
         project_id: project._id,
         name: project.name,
         status: project.status,
         due_date: project.due_date ?? null,
-        total_tasks: totalTasks,
+        total_tasks: stats.totalTasks,
         total_members: uniqueMembers.length,
         members: uniqueMembers.map((user) => ({
           id: user._id,
           name: user.name,
           email: user.email,
         })),
-        completed_tasks: completedTasks,
+        completed_tasks: stats.completedTasks,
         progress,
       };
     });
@@ -212,25 +209,16 @@ exports.dashboardRecentTasks = async (req, res) => {
   }
 };
 
-exports.dashboardUpcomingTasks = async (req, res) => {
+exports.dashboardUpcomingTasks = async () => {
   try {
-    // Get tomorrow's date
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() + 1);
-
-    // Get date after 5 days
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 5);
-
-    // Format YYYY-MM-DD
-    const formatDate = (date) => date.toISOString().split("T")[0];
+    const tomorrow = dayjs().add(1, "day").format("YYYY-MM-DD");
 
     const findTask = await Task.find({
-      due_date: {
-        $gte: formatDate(startDate),
-        $lte: formatDate(endDate),
-      },
-      "todos.completed": { $ne: false },
+      due_date: { $gte: tomorrow },
+      $or: [
+        { "todos.0": { $exists: false } },
+        { todos: { $elemMatch: { completed: false } } },
+      ],
     })
       .sort({ due_date: 1 })
       .limit(5)

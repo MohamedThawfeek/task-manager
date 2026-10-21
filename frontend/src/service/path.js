@@ -26,10 +26,20 @@ export const apiPath = {
   task: '/task/particular-task',
   userActivity: '/task/user-activity',
   userProfileTasks: '/task/user-profile-tasks',
+  userTasksCalendar: '/task/user-tasks-calander',
   createComment: '/comment/create-command',
   comments: '/comment/get-commands',
   notifications: '/notification/notifications',
   updateNotification: '/notification/update',
+  adminDashboardTaskCount: '/admindashboard/task-count',
+  adminDashboardProjects: '/admindashboard/projects',
+  adminDashboardRecentTasks: '/admindashboard/recent-tasks',
+  adminDashboardUpcomingTasks: '/admindashboard/upcoming-tasks',
+  adminDashboardBarChart: '/admindashboard/bar-chart',
+  adminDashboardDoughnutChart: '/admindashboard/donught-chart',
+  userDashboardTaskCount: '/userdashboard/task-count',
+  userDashboardBarChart: '/userdashboard/bar-chart',
+  userDashboardDoughnutChart: '/userdashboard/donught-chart',
 }
 
 export default apiPath
