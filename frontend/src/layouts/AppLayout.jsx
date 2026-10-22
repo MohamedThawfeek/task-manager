@@ -39,6 +39,7 @@ export default function AppLayout() {
     readAllNotifications,
     chooseResult,
     handleLogout,
+    readNotification,
   } = useAppLayout();
   return (
     <div className="app-shell flex min-h-screen">
@@ -115,8 +116,8 @@ export default function AppLayout() {
                 )}
               </button>
               {noticeOpen && (
-                <div className="surface absolute right-0 top-12 w-[min(360px,calc(100vw-2rem))] p-4 shadow-xl">
-                  <div className="flex items-center justify-between">
+                <div className="surface absolute right-0 top-12 w-[min(360px,calc(100vw-2rem))]  shadow-xl">
+                  <div className="flex items-center justify-between p-4">
                     <h3 className="font-bold">Notifications</h3>
                     <button
                       className="text-xs font-semibold text-primary"
@@ -129,8 +130,9 @@ export default function AppLayout() {
                     {notifications.length ? (
                       notifications.map((n) => (
                         <div
+                          onClick={() => readNotification(n.id)}
                           key={n.id}
-                          className="border-b border-[#edf0f5] py-3 last:border-0"
+                          className="border-b border-[#edf0f5] p-4 last:border-0 hover:bg-[#f2f4fa] cursor-pointer"
                         >
                           <div className="flex gap-2">
                             <span

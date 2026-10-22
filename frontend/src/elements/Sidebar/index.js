@@ -1,2 +1,2 @@
-export { default } from './Sidebar'
-export { menuItems } from './sidemenu'
+export { default } from "./Sidebar";
+export { default as menuItems } from "./sidemenu";
