@@ -2,7 +2,7 @@ const Admin = require("./admin");
 const Project = require("./projects");
 const Status = require("./status");
 const Task = require("./task");
-const User = require("./user");
+const User = require("./User");
 const Commands = require("./commands");
 const Notification = require("./notification");
 
