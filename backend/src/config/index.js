@@ -1,7 +1,11 @@
 const mongoose = require("mongoose");
 
-let isConnected = false;
-let connectionPromise = null;
+const mongoCache = globalThis.mongoCache || {
+  connection: null,
+  promise: null,
+};
+
+globalThis.mongoCache = mongoCache;
 
 exports.connectMongo = async () => {
   try {
@@ -9,55 +13,32 @@ exports.connectMongo = async () => {
       throw new Error("MongoDB connection string (MONGO_URI) is missing in environment variables");
     }
 
-    // ✅ If already connected, reuse it
-    if (mongoose.connection.readyState === 1) {
-      isConnected = true;
-      return mongoose.connection;
+    if (mongoCache.connection && mongoose.connection.readyState === 1) {
+      return mongoCache.connection;
     }
 
-    // ✅ If connection is currently in progress, wait for it
-    if (connectionPromise) {
-      return await connectionPromise;
+    if (mongoCache.connection && mongoose.connection.readyState === 0) {
+      mongoCache.connection = null;
+      mongoCache.promise = null;
     }
 
-    mongoose.set("bufferCommands", false);
-
-    const options = {
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-      connectTimeoutMS: 10000,
-      retryWrites: true,
-    };
-
-    // ✅ Register listeners ONCE
-    if (!mongoose.connection.listenerCount("connected")) {
-      mongoose.connection.on("connected", () => {
-        console.log("✅ MongoDB connected", mongoose.connection.name);
-      });
-
-      mongoose.connection.on("error", (err) => {
-        console.error("❌ MongoDB error:", err.message);
-      });
-
-      mongoose.connection.on("disconnected", () => {
-        console.warn("⚠️ MongoDB disconnected");
-        isConnected = false;
-        connectionPromise = null;
+    if (!mongoCache.promise) {
+      mongoose.set("bufferCommands", false);
+      mongoCache.promise = mongoose.connect(process.env.MONGO_URI, {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        connectTimeoutMS: 5000,
       });
     }
 
-    // ✅ Connect with promise caching
-    connectionPromise = mongoose.connect(process.env.MONGO_URI, options);
-    await connectionPromise;
-
-    isConnected = true;
-    connectionPromise = null;
-    return mongoose.connection;
+    mongoCache.connection = await mongoCache.promise;
+    console.log("MongoDB connected", mongoose.connection.name);
+    return mongoCache.connection;
   } catch (err) {
-    isConnected = false;
-    connectionPromise = null;
-    console.error("🚨 MongoDB connection failed:", {
+    mongoCache.connection = null;
+    mongoCache.promise = null;
+    console.error("MongoDB connection failed:", {
       message: err.message,
       code: err.code,
       name: err.name,

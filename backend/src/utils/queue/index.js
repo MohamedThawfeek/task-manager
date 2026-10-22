@@ -9,9 +9,6 @@ const getQueue = () => {
   return queuePromise;
 };
 
-// Initialize queue in background
-getQueue();
-
 const emailQueue = {
   add: async (fn, options) => {
     const queue = await getQueue();
@@ -29,4 +26,3 @@ const emailQueue = {
 };
 
 module.exports = emailQueue;
-
