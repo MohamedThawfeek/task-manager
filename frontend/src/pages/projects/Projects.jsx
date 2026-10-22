@@ -31,17 +31,22 @@ export default function ProjectsPage() {
     loadProjects,
     error,
     isLoading,
+    access,
   } = useProjects();
+  console.log("access", access);
+
   return (
     <>
       <PageHeader
         title="Projects"
         subtitle="Manage your projects and track progress"
         action={
-          <button className="primary-btn" onClick={openCreate}>
-            <Plus size={17} />
-            Create Project
-          </button>
+          access.includes("Admin") ? (
+            <button className="primary-btn" onClick={openCreate}>
+              <Plus size={17} />
+              Create Project
+            </button>
+          ) : null
         }
       />
       <div className="mb-5 flex flex-wrap gap-2">
@@ -132,28 +137,30 @@ export default function ProjectsPage() {
                       ? `▤ ${dayjs(p.dueDate).format("MMM D, YYYY")}`
                       : "No due date"}
                   </p>
-                  <div className="flex gap-1">
-                    <button
-                      className="rounded p-1.5 hover:bg-[#eef0f7]"
-                      title="Edit"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEdit(p);
-                      }}
-                    >
-                      <Edit3 size={15} />
-                    </button>
-                    <button
-                      className="rounded p-1.5 text-[#ef476f] hover:bg-[#fff0f3]"
-                      title="Delete"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleting(p);
-                      }}
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
+                  {access.includes("Admin") && (
+                    <div className="flex gap-1">
+                      <button
+                        className="rounded p-1.5 hover:bg-[#eef0f7]"
+                        title="Edit"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(p);
+                        }}
+                      >
+                        <Edit3 size={15} />
+                      </button>
+                      <button
+                        className="rounded p-1.5 text-[#ef476f] hover:bg-[#fff0f3]"
+                        title="Delete"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleting(p);
+                        }}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </article>
             );
@@ -177,7 +184,11 @@ export default function ProjectsPage() {
         onClose={closeModal}
         title={editing ? "Edit Project" : "Create Project"}
       >
-        <ProjectForm form={projectForm} editing={Boolean(editing)} team={team} />
+        <ProjectForm
+          form={projectForm}
+          editing={Boolean(editing)}
+          team={team}
+        />
       </Modal>
       <ConfirmModal
         open={!!deleting}

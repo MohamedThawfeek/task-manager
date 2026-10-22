@@ -36,33 +36,44 @@ export default function useTaskDetails() {
   const task = taskState.items.find((item) => item.id === id);
   const project = projects.find((item) => item.id === task?.projectId);
   const storedAssignees = task ? getTaskAssignees(task, team) : [];
-  const assignees = storedAssignees.length ? storedAssignees : task?.assignees || [];
+  const assignees = storedAssignees.length
+    ? storedAssignees
+    : task?.assignees || [];
   const complete = task?.checklist.filter((item) => item.completed).length || 0;
-  const percent = task?.checklist.length ? Math.round((complete / task.checklist.length) * 100) : 0;
+  const percent = task?.checklist.length
+    ? Math.round((complete / task.checklist.length) * 100)
+    : 0;
+  const access = useSelector((state) => state.auth.user?.access || "User");
 
-  const loadTask = useCallback(async (fallback) => {
-    dispatch(setTaskDetailLoading(true));
-    dispatch(setTaskError(""));
-    try {
-      const response = await api.post(
-        apiPath.task,
-        { task_id: id },
-        "Unable to load the task",
-      );
-      const details = normalizeTask({
-        ...response.data?.task,
-        task_id: id,
-        comments: response.data?.comments || [],
-      }, fallback || {});
-      dispatch(setTaskDetails(details));
-      return details;
-    } catch (error) {
-      dispatch(setTaskError(error.message || "Unable to load the task"));
-      throw error;
-    } finally {
-      dispatch(setTaskDetailLoading(false));
-    }
-  }, [dispatch, id]);
+  const loadTask = useCallback(
+    async (fallback) => {
+      dispatch(setTaskDetailLoading(true));
+      dispatch(setTaskError(""));
+      try {
+        const response = await api.post(
+          apiPath.task,
+          { task_id: id },
+          "Unable to load the task",
+        );
+        const details = normalizeTask(
+          {
+            ...response.data?.task,
+            task_id: id,
+            comments: response.data?.comments || [],
+          },
+          fallback || {},
+        );
+        dispatch(setTaskDetails(details));
+        return details;
+      } catch (error) {
+        dispatch(setTaskError(error.message || "Unable to load the task"));
+        throw error;
+      } finally {
+        dispatch(setTaskDetailLoading(false));
+      }
+    },
+    [dispatch, id],
+  );
 
   useEffect(() => {
     if (!id || fetchedTaskId.current === id) return;
@@ -79,8 +90,9 @@ export default function useTaskDetails() {
         "Unable to load comments",
         { params: { task_id: id } },
       );
-      const comments = (Array.isArray(response.commands) ? response.commands : [])
-        .map(formatComment);
+      const comments = (
+        Array.isArray(response.commands) ? response.commands : []
+      ).map(formatComment);
       dispatch(setTaskComments({ taskId: id, comments }));
       return comments;
     } finally {
@@ -91,7 +103,9 @@ export default function useTaskDetails() {
   useEffect(() => {
     if (!id || !task || fetchedCommentsTaskId.current === id) return;
     fetchedCommentsTaskId.current = id;
-    loadComments().catch((error) => toast.error(error.message || "Unable to load comments"));
+    loadComments().catch((error) =>
+      toast.error(error.message || "Unable to load comments"),
+    );
   }, [id, loadComments, task]);
 
   const sendComment = async () => {
@@ -125,7 +139,14 @@ export default function useTaskDetails() {
         { task_id: id, todo_id: itemId, completed: !item.completed },
         "Unable to update the checklist item",
       );
-      await loadTask({ ...task, checklist: task.checklist.map((entry) => entry.id === itemId ? { ...entry, completed: !entry.completed } : entry) });
+      await loadTask({
+        ...task,
+        checklist: task.checklist.map((entry) =>
+          entry.id === itemId
+            ? { ...entry, completed: !entry.completed }
+            : entry,
+        ),
+      });
       toast.success(result.message || "Checklist updated");
     } catch (error) {
       dispatch(toggleChecklist({ taskId: id, itemId }));
@@ -174,5 +195,6 @@ export default function useTaskDetails() {
     isLoadingComments: taskState.commentsLoading,
     isSendingComment: taskState.commentSubmitting,
     error: taskState.error,
+    access,
   };
 }

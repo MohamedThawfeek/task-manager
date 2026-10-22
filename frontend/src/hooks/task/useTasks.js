@@ -2,7 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { selectTaskState, setTaskError, setTaskListLoading, setTasks, updateTask as updateTaskInStore } from "../../redux/slice/task";
+import {
+  selectTaskState,
+  setTaskError,
+  setTaskListLoading,
+  setTasks,
+  updateTask as updateTaskInStore,
+} from "../../redux/slice/task";
 import { selectProjects, setProjects } from "../../redux/slice/project";
 import { selectTeamRows, setTeamRows } from "../../redux/slice/team";
 import api from "../../service/axios";
@@ -26,14 +32,17 @@ export default function useTasks() {
     dispatch(setTaskListLoading(true));
     dispatch(setTaskError(""));
     try {
-      const url = String(access).toLowerCase() === "admin"
-        ? apiPath.adminTasks
-        : apiPath.userTasks;
+      const url =
+        String(access).toLowerCase() === "admin"
+          ? apiPath.adminTasks
+          : apiPath.userTasks;
       const response = await api.get(url, "Unable to load tasks");
       const groups = Array.isArray(response.data) ? response.data : [];
-      const rows = groups.flatMap((group) => (group.tasks || []).map((task) => (
-        normalizeTask({ ...task, status: task.status || group.status })
-      )));
+      const rows = groups.flatMap((group) =>
+        (group.tasks || []).map((task) =>
+          normalizeTask({ ...task, status: task.status || group.status }),
+        ),
+      );
       dispatch(setTasks(rows));
       return rows;
     } catch (error) {
@@ -48,19 +57,22 @@ export default function useTasks() {
     loadTasks().catch(() => undefined);
 
     const loadProjects = async () => {
-      const url = String(access).toLowerCase() === "admin"
-        ? apiPath.projects
-        : apiPath.userProjects;
+      const url =
+        String(access).toLowerCase() === "admin"
+          ? apiPath.projects
+          : apiPath.userProjects;
       const response = await api.get(url, "Unable to load projects");
-      const rows = (Array.isArray(response.projects) ? response.projects : [])
-        .map(formatProject);
+      const rows = (
+        Array.isArray(response.projects) ? response.projects : []
+      ).map(formatProject);
       dispatch(setProjects(rows));
     };
 
     const loadUsers = async () => {
       const response = await api.get(apiPath.users, "Unable to load users");
-      const rows = (Array.isArray(response.users) ? response.users : [])
-        .map(formatUser);
+      const rows = (Array.isArray(response.users) ? response.users : []).map(
+        formatUser,
+      );
       dispatch(setTeamRows(rows));
     };
 
@@ -68,9 +80,23 @@ export default function useTasks() {
     loadUsers().catch(() => undefined);
   }, [access, dispatch, loadTasks]);
 
-  const list = useMemo(() => tasks
-    .filter((task) => (project === "All" || task.projectId === project) && task.title.toLowerCase().includes(query.toLowerCase()))
-    .sort((first, second) => sort === "title" ? first.title.localeCompare(second.title) : String(first[sort] || "").localeCompare(String(second[sort] || ""))), [tasks, project, query, sort]);
+  const list = useMemo(
+    () =>
+      tasks
+        .filter(
+          (task) =>
+            (project === "All" || task.projectId === project) &&
+            task.title.toLowerCase().includes(query.toLowerCase()),
+        )
+        .sort((first, second) =>
+          sort === "title"
+            ? first.title.localeCompare(second.title)
+            : String(first[sort] || "").localeCompare(
+                String(second[sort] || ""),
+              ),
+        ),
+    [tasks, project, query, sort],
+  );
 
   const dropTask = async (status, event) => {
     event.preventDefault();
@@ -99,7 +125,8 @@ export default function useTasks() {
     }
   };
 
-  const projectName = (id, task) => projects.find((item) => item.id === id)?.name || task?.projectName || "";
+  const projectName = (id, task) =>
+    projects.find((item) => item.id === id)?.name || task?.projectName || "";
   const taskAssignees = (task) => {
     const members = getTaskAssignees(task, team);
     return members.length ? members : task.assignees || [];
@@ -121,5 +148,6 @@ export default function useTasks() {
     loadTasks,
     isLoading: taskState.listLoading,
     error: taskState.error,
+    access,
   };
 }

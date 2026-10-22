@@ -43,12 +43,14 @@ export default function useProjects() {
     dispatch(setProjectListLoading(true));
     dispatch(setProjectError(""));
     try {
-      const url = String(access).toLowerCase() === "admin"
-        ? apiPath.projects
-        : apiPath.userProjects;
+      const url =
+        String(access).toLowerCase() === "admin"
+          ? apiPath.projects
+          : apiPath.userProjects;
       const response = await api.get(url, "Unable to load projects");
-      const rows = (Array.isArray(response.projects) ? response.projects : [])
-        .map(formatProject);
+      const rows = (
+        Array.isArray(response.projects) ? response.projects : []
+      ).map(formatProject);
       dispatch(setProjects(rows));
       return rows;
     } catch (error) {
@@ -64,8 +66,9 @@ export default function useProjects() {
 
     const loadUsers = async () => {
       const response = await api.get(apiPath.users, "Unable to load users");
-      const users = (Array.isArray(response.users) ? response.users : [])
-        .map(formatUser);
+      const users = (Array.isArray(response.users) ? response.users : []).map(
+        formatUser,
+      );
       dispatch(setTeamRows(users));
     };
 
@@ -173,5 +176,6 @@ export default function useProjects() {
     isLoading: projectState.listLoading,
     isSubmitting: projectState.submitting,
     isDeleting: projectState.deleting,
+    access,
   };
 }

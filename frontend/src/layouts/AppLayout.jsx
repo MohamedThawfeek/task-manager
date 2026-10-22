@@ -171,7 +171,8 @@ export default function AppLayout() {
                   setNoticeOpen(false);
                 }}
               >
-                {user.avatar ? (
+                {console.log("user", user)}
+                {user.avatar && user.avatar.startsWith("data:image/") ? (
                   <img
                     src={user.avatar}
                     className="h-10 w-10 rounded-full"

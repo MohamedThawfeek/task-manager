@@ -37,6 +37,7 @@ export default function ProjectDetailsPage() {
     loadProject,
     error,
     isLoading,
+    access,
   } = useProjectDetails();
   if (isLoading && !project)
     return (
@@ -84,17 +85,19 @@ export default function ProjectDetailsPage() {
         title={project.name}
         subtitle={project.description}
         action={
-          <div className="flex gap-2">
-            <button
-              className="secondary-btn text-[#ef476f]"
-              onClick={() => setConfirm(true)}
-            >
-              <Trash2 size={16} />
-            </button>
-            <button className="primary-btn" onClick={() => setEdit(true)}>
-              Edit Project
-            </button>
-          </div>
+          access.includes("Admin") && (
+            <div className="flex gap-2">
+              <button
+                className="secondary-btn text-[#ef476f]"
+                onClick={() => setConfirm(true)}
+              >
+                <Trash2 size={16} />
+              </button>
+              <button className="primary-btn" onClick={() => setEdit(true)}>
+                Edit Project
+              </button>
+            </div>
+          )
         }
       />
       <div className="mb-5 flex gap-3 overflow-x-auto">
@@ -139,13 +142,15 @@ export default function ProjectDetailsPage() {
               <h2 className="text-xl font-bold">
                 Tasks ({projectTasks.length})
               </h2>
-              <button
-                className="primary-btn"
-                onClick={() => navigate(`/tasks/new?project=${id}`)}
-              >
-                <Plus size={16} />
-                Task
-              </button>
+              {access.includes("Admin") && (
+                <button
+                  className="primary-btn"
+                  onClick={() => navigate(`/tasks/new?project=${id}`)}
+                >
+                  <Plus size={16} />
+                  Task
+                </button>
+              )}
             </div>
             {projectTasks.length ? (
               <div className="mt-4 overflow-x-auto">
@@ -232,7 +237,7 @@ export default function ProjectDetailsPage() {
           <div>
             <div className="flex flex-wrap items-end justify-between gap-3">
               <h2 className="text-xl font-bold">Project team</h2>
-              <div className="flex w-full gap-2 sm:w-auto">
+              {/* <div className="flex w-full gap-2 sm:w-auto">
                 <Dropdown
                   className="min-w-0 flex-1 sm:w-55"
                   value={memberId}
@@ -248,7 +253,7 @@ export default function ProjectDetailsPage() {
                 <button className="primary-btn" onClick={assignMember}>
                   Assign
                 </button>
-              </div>
+              </div> */}
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {project.memberIds.map((mid) => {
@@ -263,13 +268,6 @@ export default function ProjectDetailsPage() {
                       <p className="font-bold">{m?.name}</p>
                       <p className="text-sm text-muted">{m?.role}</p>
                     </div>
-                    <button
-                      className="ml-auto rounded-lg p-2 text-[#ef476f] hover:bg-[#fff0f3]"
-                      title="Remove from project"
-                      onClick={() => removeMember(mid)}
-                    >
-                      <Trash2 size={15} />
-                    </button>
                   </div>
                 );
               })}

@@ -29,6 +29,7 @@ export default function TasksPage() {
     loadTasks,
     isLoading,
     error,
+    access,
   } = useTasks();
   return (
     <>
@@ -36,13 +37,15 @@ export default function TasksPage() {
         title="Tasks"
         subtitle="Manage and track your tasks"
         action={
-          <button
-            className="primary-btn"
-            onClick={() => navigate("/tasks/new")}
-          >
-            <Plus size={17} />
-            Add Task
-          </button>
+          access.includes("Admin") && (
+            <button
+              className="primary-btn"
+              onClick={() => navigate("/tasks/new")}
+            >
+              <Plus size={17} />
+              Add Task
+            </button>
+          )
         }
       />
       {error && (

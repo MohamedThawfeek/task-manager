@@ -38,6 +38,7 @@ export default function TaskDetailsPage() {
     isLoadingComments,
     isSendingComment,
     error,
+    access,
   } = useTaskDetails();
   if (isLoading && !task) return <LoadingScreen />;
   if (!task)
@@ -60,21 +61,23 @@ export default function TaskDetailsPage() {
         title={task.title}
         subtitle={`Tasks › ${task.title}`}
         action={
-          <div className="flex gap-2">
-            <button
-              className="secondary-btn text-[#ef476f]"
-              onClick={() => setConfirm(true)}
-            >
-              <Trash2 size={17} />
-            </button>
-            <button
-              className="primary-btn"
-              onClick={() => navigate(`/tasks/${id}/edit`)}
-            >
-              <Edit3 size={16} />
-              Edit Task
-            </button>
-          </div>
+          access.includes("Admin") && (
+            <div className="flex gap-2">
+              <button
+                className="secondary-btn text-[#ef476f]"
+                onClick={() => setConfirm(true)}
+              >
+                <Trash2 size={17} />
+              </button>
+              <button
+                className="primary-btn"
+                onClick={() => navigate(`/tasks/${id}/edit`)}
+              >
+                <Edit3 size={16} />
+                Edit Task
+              </button>
+            </div>
+          )
         }
       />
       <div className="grid gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(290px,1fr)]">

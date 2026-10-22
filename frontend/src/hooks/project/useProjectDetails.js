@@ -14,7 +14,11 @@ import {
   setProjectSubmitting,
   updateProject as updateProjectInStore,
 } from "../../redux/slice/project";
-import { removeProjectTasks, selectTasks, setProjectTasks } from "../../redux/slice/task";
+import {
+  removeProjectTasks,
+  selectTasks,
+  setProjectTasks,
+} from "../../redux/slice/task";
 import api from "../../service/axios";
 import { apiPath } from "../../service/path";
 import {
@@ -26,7 +30,9 @@ import {
 
 function mergeMembers(team, projectMembers = []) {
   const members = new Map(team.map((member) => [member.id, member]));
-  projectMembers.forEach((member) => members.set(member.id, { ...members.get(member.id), ...member }));
+  projectMembers.forEach((member) =>
+    members.set(member.id, { ...members.get(member.id), ...member }),
+  );
   return [...members.values()];
 }
 
@@ -38,12 +44,19 @@ export default function useProjectDetails() {
   const tasks = useAppSelector(selectTasks);
   const storedTeam = useAppSelector(selectTeamRows);
   const project = projectState.items.find((item) => item.id === id);
-  const team = useMemo(() => mergeMembers(storedTeam, project?.members), [storedTeam, project?.members]);
-  const projectTasks = useMemo(() => tasks.filter((task) => task.projectId === id), [tasks, id]);
+  const team = useMemo(
+    () => mergeMembers(storedTeam, project?.members),
+    [storedTeam, project?.members],
+  );
+  const projectTasks = useMemo(
+    () => tasks.filter((task) => task.projectId === id),
+    [tasks, id],
+  );
   const [tab, setTab] = useState("Tasks");
   const [edit, setEdit] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [memberId, setMemberId] = useState("");
+  const access = useAppSelector((state) => state.auth.user?.access || "User");
 
   const loadProject = useCallback(async () => {
     dispatch(setProjectDetailLoading(true));
@@ -55,8 +68,9 @@ export default function useProjectDetails() {
         "Unable to load project",
       );
       const data = response.data || {};
-      const members = (Array.isArray(data.teams) ? data.teams : [])
-        .map(formatUser);
+      const members = (Array.isArray(data.teams) ? data.teams : []).map(
+        formatUser,
+      );
       const projectTasks = Array.isArray(data.tasks) ? data.tasks : [];
       const details = {
         project: formatProject({
@@ -84,8 +98,9 @@ export default function useProjectDetails() {
 
     const loadUsers = async () => {
       const response = await api.get(apiPath.users, "Unable to load users");
-      const users = (Array.isArray(response.users) ? response.users : [])
-        .map(formatUser);
+      const users = (Array.isArray(response.users) ? response.users : []).map(
+        formatUser,
+      );
       dispatch(setTeamRows(users));
     };
 
@@ -129,13 +144,19 @@ export default function useProjectDetails() {
 
   const assignMember = async () => {
     if (!memberId || !project || project.memberIds.includes(memberId)) return;
-    await saveProject({ ...project, memberIds: [...project.memberIds, memberId] });
+    await saveProject({
+      ...project,
+      memberIds: [...project.memberIds, memberId],
+    });
     setMemberId("");
   };
 
   const removeMember = async (idToRemove) => {
     if (!project) return;
-    await saveProject({ ...project, memberIds: project.memberIds.filter((item) => item !== idToRemove) });
+    await saveProject({
+      ...project,
+      memberIds: project.memberIds.filter((item) => item !== idToRemove),
+    });
   };
 
   const removeProject = async () => {
@@ -181,5 +202,6 @@ export default function useProjectDetails() {
     isLoading: projectState.detailLoading,
     isSubmitting: projectState.submitting,
     isDeleting: projectState.deleting,
+    access,
   };
 }
