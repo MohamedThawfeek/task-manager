@@ -26,6 +26,24 @@ app.use(
 //   }),
 // );
 
+// Ensure Mongo connection for incoming requests (vital for Vercel Serverless cold starts)
+app.use(async (req, res, next) => {
+  if (req.path === "/health") {
+    return next();
+  }
+  try {
+    await connectMongo();
+    next();
+  } catch (err) {
+    console.error("Database connection error on request:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: "Database connection failed",
+      error: err.message,
+    });
+  }
+});
+
 // Root endpoint
 app.get("/", async (req, res) => {
   try {
@@ -57,22 +75,3 @@ app.all("*", (req, res) => {
 
 module.exports = app;
 
-// Start server only after MongoDB is connected (avoids "bufferCommands = false" errors on first request)
-async function startServer() {
-  try {
-    await connectMongo();
-    app.listen(PORT, () => {
-      console.log(`Server listening on port ${PORT}`);
-    });
-  } catch (err) {
-    console.error("Failed to connect to MongoDB:", err);
-    console.error("Please check:");
-    console.error("1. MongoDB server is running and accessible");
-    console.error("2. _DB_URL environment variable is set correctly");
-    console.error("3. Network connectivity to MongoDB server");
-    console.error("4. Firewall rules allow connection to MongoDB port");
-    process.exit(1);
-  }
-}
-
-startServer();

@@ -1,25 +1,32 @@
 const mongoose = require("mongoose");
 
-let isConnected = false; // prevent multiple connections
+let isConnected = false;
+let connectionPromise = null;
 
 exports.connectMongo = async () => {
   try {
     if (!process.env.MONGO_URI) {
-      throw new Error("MongoDB connection string (MONGO_URI) is missing");
+      throw new Error("MongoDB connection string (MONGO_URI) is missing in environment variables");
     }
 
     // ✅ If already connected, reuse it
-    if (isConnected) {
+    if (mongoose.connection.readyState === 1) {
+      isConnected = true;
       return mongoose.connection;
+    }
+
+    // ✅ If connection is currently in progress, wait for it
+    if (connectionPromise) {
+      return await connectionPromise;
     }
 
     mongoose.set("bufferCommands", false);
 
     const options = {
-      maxPoolSize: 10, // good balance
-      serverSelectionTimeoutMS: 20000, // fail fast
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
-      connectTimeoutMS: 20000,
+      connectTimeoutMS: 10000,
       retryWrites: true,
     };
 
@@ -36,15 +43,20 @@ exports.connectMongo = async () => {
       mongoose.connection.on("disconnected", () => {
         console.warn("⚠️ MongoDB disconnected");
         isConnected = false;
+        connectionPromise = null;
       });
     }
 
-    // ✅ Connect
-    await mongoose.connect(process.env.MONGO_URI, options);
+    // ✅ Connect with promise caching
+    connectionPromise = mongoose.connect(process.env.MONGO_URI, options);
+    await connectionPromise;
 
     isConnected = true;
+    connectionPromise = null;
     return mongoose.connection;
   } catch (err) {
+    isConnected = false;
+    connectionPromise = null;
     console.error("🚨 MongoDB connection failed:", {
       message: err.message,
       code: err.code,
