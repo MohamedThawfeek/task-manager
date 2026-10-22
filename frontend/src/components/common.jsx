@@ -60,7 +60,20 @@ export function LoadingScreen() {
 }
 
 export function Avatar({ member, size = 34, className = '' }) {
-  return <span className={`avatar ${className}`} style={{ width: size, height: size, fontSize: Math.max(10, size * .31) }} title={member?.name}>{member?.avatar || member?.name?.split(' ').map((n) => n[0]).join('').slice(0, 2) || '?'}</span>
+  const avatar = member?.avatar
+  const isImage = typeof avatar === 'string' && /^(data:image\/|https?:\/\/|blob:|\/)/i.test(avatar)
+  const initials = member?.name
+    ?.split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || '?'
+
+  return <span className={`avatar overflow-hidden ${className}`} style={{ width: size, height: size, fontSize: Math.max(10, size * .31) }} title={member?.name}>
+    {isImage
+      ? <img src={avatar} alt="" className="h-full w-full object-cover" />
+      : avatar || initials}
+  </span>
 }
 
 export const priorityBadge = (priority) => priority === 'High' ? 'badge badge-red' : priority === 'Medium' ? 'badge badge-yellow' : 'badge badge-green'

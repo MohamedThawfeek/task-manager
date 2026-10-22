@@ -90,35 +90,47 @@ export default function ProjectsPage() {
                   >
                     ▣
                   </span>
-                  <div>
-                    <h3 className="font-bold">{p.name}</h3>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate font-bold">{p.name}</h3>
                     <p className="text-xs text-muted">
                       {count} tasks · {p.memberIds.length} members
                     </p>
                   </div>
-                  <span className="badge badge-green ml-auto">{p.status}</span>
+                  <span className="badge badge-green shrink-0">{p.status}</span>
                 </div>
                 <div className="progress mt-6">
                   <span
                     style={{ width: `${p.progress}%`, background: p.color }}
                   />
                 </div>
-                <div className="mt-4 flex justify-between">
-                  <div className="flex -space-x-2">
-                    {p.memberIds.map((id) => (
+                <div className="mt-4 flex min-h-[29px] items-center justify-between gap-3">
+                  <div className="flex min-w-0 -space-x-2">
+                    {p.memberIds.slice(0, 4).map((id) => (
                       <Avatar
                         className="border-2 border-white"
                         key={id}
                         size={25}
-                        member={team.find((m) => m.id === id)}
+                        member={
+                          team.find((member) => member.id === id) ||
+                          p.members.find((member) => member.id === id)
+                        }
                       />
                     ))}
+                    {p.memberIds.length > 4 && (
+                      <span className="avatar h-[25px] w-[25px] border-2 border-white text-[9px]">
+                        +{p.memberIds.length - 4}
+                      </span>
+                    )}
                   </div>
-                  <span className="text-sm text-muted">{p.progress}%</span>
+                  <span className="shrink-0 text-sm text-muted">
+                    {p.progress}%
+                  </span>
                 </div>
                 <div className="mt-2 flex items-center justify-between">
                   <p className="text-xs text-muted">
-                    ▤ {dayjs(p.dueDate).format("MMM D, YYYY")}
+                    {p.dueDate
+                      ? `▤ ${dayjs(p.dueDate).format("MMM D, YYYY")}`
+                      : "No due date"}
                   </p>
                   <div className="flex gap-1">
                     <button

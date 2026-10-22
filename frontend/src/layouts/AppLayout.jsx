@@ -171,16 +171,25 @@ export default function AppLayout() {
                   setNoticeOpen(false);
                 }}
               >
-                <Avatar
-                  member={{
-                    name: user?.name,
-                    avatar: user?.name
-                      ?.split(" ")
-                      .map((n) => n[0])
-                      .join(""),
-                  }}
-                  size={44}
-                />
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    className="h-10 w-10 rounded-full"
+                    alt=""
+                  />
+                ) : (
+                  <Avatar
+                    member={{
+                      name: user?.name,
+                      avatar: user?.name
+                        ?.split(" ")
+                        .map((n) => n[0])
+                        .join(""),
+                    }}
+                    size={44}
+                  />
+                )}
+
                 <span className="hidden md:block">
                   <strong className="block text-sm">
                     {user?.name || user?.email || ""}
